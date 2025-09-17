@@ -1,1 +1,406 @@
-111
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环境监测数据分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        select, button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            font-size: 14px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .chart-container {
+            display: flex;
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .chart-wrapper {
+            flex: 3;
+            padding: 15px;
+        }
+        .stats-panel {
+            flex: 1;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-left: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .stat-box {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .stat-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .chart-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>环境监测数据分析</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="timeRange">时间范围:</label>
+                <select id="timeRange">
+                    <option value="week">最近一周</option>
+                    <option value="month">最近一个月</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <button id="updateBtn">更新图表</button>
+            </div>
+        </div>
+        
+        <!-- 温度图表 -->
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <div class="chart-title">温度变化趋势 (°C)</div>
+                <canvas id="tempChart"></canvas>
+            </div>
+            <div class="stats-panel">
+                <div class="stat-box">
+                    <div class="stat-title">最高温度</div>
+                    <div class="stat-value" id="tempMax">-- °C</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-title">最低温度</div>
+                    <div class="stat-value" id="tempMin">-- °C</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-title">平均温度</div>
+                    <div class="stat-value" id="tempAvg">-- °C</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 湿度图表 -->
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <div class="chart-title">湿度变化趋势 (%)</div>
+                <canvas id="humidityChart"></canvas>
+            </div>
+            <div class="stats-panel">
+                <div class="stat-box">
+                    <div class="stat-title">最高湿度</div>
+                    <div class="stat-value" id="humidityMax">-- %</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-title">最低湿度</div>
+                    <div class="stat-value" id="humidityMin">-- %</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-title">平均湿度</div>
+                    <div class="stat-value" id="humidityAvg">-- %</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- pH值图表 -->
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <div class="chart-title">pH值变化趋势</div>
+                <canvas id="phChart"></canvas>
+            </div>
+            <div class="stats-panel">
+                <div class="stat-box">
+                    <div class="stat-title">最高pH值</div>
+                    <div class="stat-value" id="phMax">--</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-title">最低pH值</div>
+                    <div class="stat-value" id="phMin">--</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-title">平均pH值</div>
+                    <div class="stat-value" id="phAvg">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 图表实例
+        let tempChart, humidityChart, phChart;
+        
+        // 生成模拟数据
+        function generateData(timeRange) {
+            const dataPoints = timeRange === 'week' ? 7*24 : 30*24; // 周数据168点，月数据720点
+            const days = timeRange === 'week' ? 7 : 30;
+            
+            const labels = [];
+            const tempData = [];
+            const humidityData = [];
+            const phData = [];
+            const phDailyData = [];
+            
+            const now = new Date();
+            
+            // 生成温度数据（昼夜波动）
+            for (let i = dataPoints - 1; i >= 0; i--) {
+                const date = new Date(now - i * 60 * 60 * 1000); // 每小时一个点
+                
+                // 生成标签（日期时间）
+                if (timeRange === 'week') {
+                    labels.push(date.toLocaleDateString() + ' ' + date.getHours() + ':00');
+                } else {
+                    // 对于月度视图，只显示日期
+                    if (date.getHours() === 12) { // 只在中午显示标签
+                        labels.push(date.toLocaleDateString());
+                    } else {
+                        labels.push('');
+                    }
+                }
+                
+                // 生成温度数据（模拟昼夜变化）
+                const hour = date.getHours();
+                // 基础温度随季节变化（假设当前是春季）
+                const baseTemp = 15 + 5 * Math.sin((date.getDate() % 30) / 30 * Math.PI * 2);
+                // 昼夜波动
+                const dailyFluctuation = 8 * Math.sin((hour - 6) / 12 * Math.PI);
+                const randomVariation = (Math.random() - 0.5) * 2; // 随机波动
+                
+                const temperature = baseTemp + dailyFluctuation + randomVariation;
+                tempData.push(parseFloat(temperature.toFixed(1)));
+                
+                // 生成湿度数据（与温度负相关）
+                const baseHumidity = 60 - 0.5 * baseTemp;
+                const humidityFluctuation = -0.7 * dailyFluctuation;
+                const humidityRandom = (Math.random() - 0.5) * 4;
+                
+                let humidity = baseHumidity + humidityFluctuation + humidityRandom;
+                humidity = Math.max(30, Math.min(90, humidity)); // 限制在30-90%范围内
+                humidityData.push(parseFloat(humidity.toFixed(1)));
+            }
+            
+            // 生成pH数据（每天一个测量值）
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date(now - i * 24 * 60 * 60 * 1000);
+                
+                // pH值缓慢变化，在6.5-7.5之间
+                const basePh = 7.0;
+                const dailyChange = 0.1 * Math.sin(i / 10);
+                const randomChange = (Math.random() - 0.5) * 0.2;
+                
+                const phValue = basePh + dailyChange + randomChange;
+                phDailyData.push(parseFloat(phValue.toFixed(2)));
+            }
+            
+            // 扩展pH数据到每小时（每天相同值）
+            for (let i = 0; i < dataPoints; i++) {
+                const dayIndex = Math.floor(i / 24) % days;
+                phData.push(phDailyData[dayIndex]);
+            }
+            
+            return { labels, tempData, humidityData, phData, phDailyData };
+        }
+        
+        // 计算统计数据
+        function calculateStats(data) {
+            return {
+                max: Math.max(...data).toFixed(2),
+                min: Math.min(...data).toFixed(2),
+                avg: (data.reduce((a, b) => a + b, 0) / data.length).toFixed(2)
+            };
+        }
+        
+        // 更新统计信息显示
+        function updateStats(tempData, humidityData, phData) {
+            const tempStats = calculateStats(tempData);
+            const humidityStats = calculateStats(humidityData);
+            const phStats = calculateStats(phData);
+            
+            document.getElementById('tempMax').textContent = tempStats.max + ' °C';
+            document.getElementById('tempMin').textContent = tempStats.min + ' °C';
+            document.getElementById('tempAvg').textContent = tempStats.avg + ' °C';
+            
+            document.getElementById('humidityMax').textContent = humidityStats.max + ' %';
+            document.getElementById('humidityMin').textContent = humidityStats.min + ' %';
+            document.getElementById('humidityAvg').textContent = humidityStats.avg + ' %';
+            
+            document.getElementById('phMax').textContent = phStats.max;
+            document.getElementById('phMin').textContent = phStats.min;
+            document.getElementById('phAvg').textContent = phStats.avg;
+        }
+        
+        // 初始化图表
+        function initCharts() {
+            const timeRange = document.getElementById('timeRange').value;
+            const { labels, tempData, humidityData, phData } = generateData(timeRange);
+            
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            autoSkip: true,
+                            maxTicksLimit: timeRange === 'week' ? 24 : 15
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            };
+            
+            // 销毁现有图表（如果存在）
+            if (tempChart) tempChart.destroy();
+            if (humidityChart) humidityChart.destroy();
+            if (phChart) phChart.destroy();
+            
+            // 创建温度图表
+            tempChart = new Chart(document.getElementById('tempChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '温度 (°C)',
+                        data: tempData,
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: chartOptions
+            });
+            
+            // 创建湿度图表
+            humidityChart = new Chart(document.getElementById('humidityChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '湿度 (%)',
+                        data: humidityData,
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: chartOptions
+            });
+            
+            // 创建pH值图表
+            phChart = new Chart(document.getElementById('phChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'pH值',
+                        data: phData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: chartOptions
+            });
+            
+            // 更新统计数据
+            updateStats(tempData, humidityData, phData);
+        }
+        
+        // 页面加载时初始化图表
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            
+            // 添加更新按钮事件监听
+            document.getElementById('updateBtn').addEventListener('click', initCharts);
+        });
+    </script>
+</body>
+</html>
