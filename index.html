@@ -362,13 +362,15 @@
                             showModal(
                                 '导航确认',
                                 `您即将进入接地网${pos.id}#电阻检测页面`,
-                                `resistance_detection_${pos.id}.html`
+                                // 传递参数到目标页面
+                                `resistance_detection.html?id=${pos.id}`
                             );
                         } else {
                             showModal(
                                 '导航确认',
                                 `您即将进入接地网${pos.id}#环境监测页面`,
-                                `environment_monitoring_${pos.id}.html`
+                                // 传递参数到目标页面
+                                `environment_monitoring.html?id=${pos.id}`
                             );
                         }
                     });
@@ -403,7 +405,7 @@
                 modal.style.display = 'none';
             });
             
-            // 确认导航 - 修改为实际跳转
+            // 确认导航 - 实际跳转
             confirmNavigate.addEventListener('click', function() {
                 modal.style.display = 'none';
                 // 实际跳转到目标页面
