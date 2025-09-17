@@ -1,1 +1,345 @@
-111
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>接地网腐蚀状态评估示意图</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .canvas-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        #gridCanvas {
+            display: block;
+            margin: 0 auto;
+            background-color: white;
+            border: 1px solid #ddd;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .info-panel {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+            margin-top: 20px;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            border: 1px solid #ccc;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>接地网腐蚀状态评估示意图</h1>
+        
+        <div class="canvas-container">
+            <canvas id="gridCanvas" width="800" height="800"></canvas>
+        </div>
+        
+        <div class="controls">
+            <button id="regenerateBtn">重新生成示意图</button>
+            <button id="downloadBtn">下载图像</button>
+        </div>
+        
+        <div class="info-panel">
+            <h3>图例说明</h3>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #4d4d4d;"></div>
+                    <span>接地网节点</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #808080;"></div>
+                    <span>接地网钢片</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: rgba(255, 0, 0, 0.2);"></div>
+                    <span>腐蚀区域</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: white; border: 2px dashed red;"></div>
+                    <span>腐蚀区域边界</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h3>功能说明</h3>
+            <p>本示意图展示了接地网的腐蚀状态评估结果：</p>
+            <ul>
+                <li>灰色节点和连线表示正常接地网结构</li>
+                <li>红色虚线框表示腐蚀区域边界</li>
+                <li>红色节点和纹理表示严重腐蚀区域</li>
+                <li>点击"重新生成示意图"可以随机生成新的腐蚀区域</li>
+                <li>点击"下载图像"可以保存当前示意图</li>
+            </ul>
+        </div>
+    </div>
+    
+    <footer>
+        <p>基于MATLAB代码实现的Web版本 © 2023</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('gridCanvas');
+            const ctx = canvas.getContext('2d');
+            const regenerateBtn = document.getElementById('regenerateBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            // 初始化参数
+            const gridSize = 10;
+            const nodeRadius = 5;
+            const cellSize = 60;
+            const padding = 100;
+            
+            // 腐蚀区域定义
+            let corrosionAreas = [];
+            
+            // 生成随机腐蚀区域
+            function generateCorrosionAreas() {
+                corrosionAreas = [
+                    {x: 3, y: 3, width: 2, height: 2},
+                    {x: 7, y: 5, width: 3, height: 1},
+                    {x: 2, y: 8, width: 1, height: 3}
+                ];
+            }
+            
+            // 绘制接地网
+            function drawGroundGrid() {
+                // 清除画布
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 设置背景
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制标题
+                ctx.font = 'bold 16px Arial';
+                ctx.fillStyle = '#2c3e50';
+                ctx.textAlign = 'center';
+                ctx.fillText('接地网腐蚀状态评估示意图', canvas.width / 2, 30);
+                
+                // 绘制坐标轴标签
+                ctx.font = '12px Arial';
+                ctx.fillText('水平位置', canvas.width / 2, canvas.height - 20);
+                
+                ctx.save();
+                ctx.translate(20, canvas.height / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('垂直位置', 0, 0);
+                ctx.restore();
+                
+                // 绘制网格和节点
+                for (let i = 0; i <= gridSize; i++) {
+                    for (let j = 0; j <= gridSize; j++) {
+                        const x = padding + j * cellSize;
+                        const y = padding + i * cellSize;
+                        
+                        // 绘制节点
+                        ctx.beginPath();
+                        ctx.arc(x, y, nodeRadius, 0, Math.PI * 2);
+                        ctx.fillStyle = '#4d4d4d';
+                        ctx.fill();
+                        
+                        // 绘制水平连接线
+                        if (j < gridSize) {
+                            ctx.beginPath();
+                            ctx.moveTo(x, y);
+                            ctx.lineTo(x + cellSize, y);
+                            ctx.lineWidth = 2;
+                            ctx.strokeStyle = '#808080';
+                            ctx.stroke();
+                        }
+                        
+                        // 绘制垂直连接线
+                        if (i < gridSize) {
+                            ctx.beginPath();
+                            ctx.moveTo(x, y);
+                            ctx.lineTo(x, y + cellSize);
+                            ctx.lineWidth = 2;
+                            ctx.strokeStyle = '#808080';
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                // 绘制腐蚀区域
+                corrosionAreas.forEach(area => {
+                    const x = padding + (area.x - 1) * cellSize;
+                    const y = padding + (area.y - 1) * cellSize;
+                    const width = area.width * cellSize;
+                    const height = area.height * cellSize;
+                    
+                    // 绘制腐蚀区域背景
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+                    ctx.fillRect(x, y, width, height);
+                    
+                    // 绘制腐蚀区域边界
+                    ctx.beginPath();
+                    ctx.rect(x, y, width, height);
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeStyle = 'red';
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // 绘制腐蚀节点
+                    for (let i = area.x; i < area.x + area.width; i++) {
+                        for (let j = area.y; j < area.y + area.height; j++) {
+                            const nodeX = padding + (i - 1) * cellSize;
+                            const nodeY = padding + (j - 1) * cellSize;
+                            
+                            // 绘制腐蚀标记
+                            ctx.beginPath();
+                            ctx.arc(nodeX, nodeY, nodeRadius + 2, 0, Math.PI * 2);
+                            ctx.strokeStyle = 'red';
+                            ctx.lineWidth = 2;
+                            ctx.stroke();
+                            
+                            // 绘制腐蚀纹理
+                            for (let k = 0; k < 3; k++) {
+                                const offsetX = (Math.random() - 0.5) * 10;
+                                const offsetY = (Math.random() - 0.5) * 10;
+                                ctx.beginPath();
+                                ctx.arc(nodeX + offsetX, nodeY + offsetY, 2, 0, Math.PI * 2);
+                                ctx.fillStyle = 'red';
+                                ctx.fill();
+                            }
+                        }
+                    }
+                    
+                    // 添加腐蚀文本标签
+                    const centerX = x + width / 2;
+                    const centerY = y + height / 2;
+                    
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.fillRect(centerX - 40, centerY - 10, 80, 20);
+                    
+                    ctx.font = 'bold 10px Arial';
+                    ctx.fillStyle = 'red';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('严重腐蚀', centerX, centerY);
+                });
+                
+                // 绘制图例
+                const legendX = padding + gridSize * cellSize + 30;
+                let legendY = padding;
+                
+                ctx.font = '12px Arial';
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'left';
+                
+                // 节点图例
+                ctx.beginPath();
+                ctx.arc(legendX, legendY, nodeRadius, 0, Math.PI * 2);
+                ctx.fillStyle = '#4d4d4d';
+                ctx.fill();
+                ctx.fillText('接地网节点', legendX + 15, legendY + 4);
+                
+                // 连接线图例
+                legendY += 30;
+                ctx.beginPath();
+                ctx.moveTo(legendX - 10, legendY);
+                ctx.lineTo(legendX + 10, legendY);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#808080';
+                ctx.stroke();
+                ctx.fillText('接地网钢片', legendX + 15, legendY + 4);
+                
+                // 腐蚀区域图例
+                legendY += 30;
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                ctx.fillRect(legendX - 10, legendY - 5, 20, 10);
+                ctx.beginPath();
+                ctx.rect(legendX - 10, legendY - 5, 20, 10);
+                ctx.setLineDash([5, 5]);
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillText('腐蚀区域', legendX + 15, legendY + 4);
+            }
+            
+            // 初始化绘图
+            generateCorrosionAreas();
+            drawGroundGrid();
+            
+            // 重新生成示意图
+            regenerateBtn.addEventListener('click', function() {
+                generateCorrosionAreas();
+                drawGroundGrid();
+            });
+            
+            // 下载图像
+            downloadBtn.addEventListener('click', function() {
+                const link = document.createElement('a');
+                link.download = '接地网腐蚀状态评估示意图.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        });
+    </script>
+</body>
+</html>
