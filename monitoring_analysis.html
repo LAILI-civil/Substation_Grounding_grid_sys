@@ -6,108 +6,193 @@
     <title>环境监测数据分析</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
+        * {
             margin: 0;
-            padding: 20px;
-            background-color: #f5f7f9;
-            color: #333;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
         }
+        
+        body {
+            background-color: #0a1a2a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+        
         .container {
+            width: 100%;
             max-width: 1200px;
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            background: rgba(16, 37, 53, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            padding: 20px;
         }
-        h1 {
+        
+        header {
+            background: linear-gradient(to right, #0a2a3a, #0a1a2a);
+            padding: 20px;
+            border-bottom: 1px solid #1e4a6a;
             text-align: center;
-            color: #2c3e50;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
+        
+        h1 {
+            font-size: 32px;
+            color: #4fc3f7;
+            text-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            letter-spacing: 2px;
+            margin: 0;
+            padding: 10px 30px;
+            display: inline-block;
+            border: 1px solid #2e5a7a;
+            border-radius: 8px;
+            background: rgba(10, 30, 45, 0.8);
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
+        }
+        
+        .back-button {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: linear-gradient(to right, #0a2a3a, #0a1a2a);
+            color: #4fc3f7;
+            text-decoration: none;
+            border-radius: 5px;
+            border: 1px solid #2e5a7a;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        
+        .back-button:hover {
+            background: linear-gradient(to right, #0a3a4a, #0a2a3a);
+            box-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+        }
+        
         .controls {
             display: flex;
             justify-content: center;
             margin-bottom: 20px;
             gap: 15px;
         }
+        
         .control-group {
             display: flex;
             align-items: center;
-            background: white;
+            background: rgba(16, 37, 53, 0.9);
             padding: 10px 15px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            border: 1px solid #1e4a6a;
         }
+        
         label {
             margin-right: 10px;
             font-weight: bold;
+            color: #4fc3f7;
         }
+        
         select, button {
             padding: 8px 12px;
-            border: 1px solid #ddd;
+            border: 1px solid #2e5a7a;
             border-radius: 4px;
-            background-color: white;
+            background-color: #0a1a2a;
+            color: #e0e0e0;
             font-size: 14px;
         }
+        
         button {
-            background-color: #3498db;
-            color: white;
-            border: none;
+            background-color: #0a2a3a;
+            color: #4fc3f7;
+            border: 1px solid #2e5a7a;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s;
         }
+        
         button:hover {
-            background-color: #2980b9;
+            background-color: #0a3a4a;
+            box-shadow: 0 0 10px rgba(79, 195, 247, 0.3);
         }
+        
         .chart-container {
             display: flex;
             margin-bottom: 30px;
-            background: white;
+            background: rgba(16, 37, 53, 0.9);
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             overflow: hidden;
+            border: 1px solid #1e4a6a;
         }
+        
         .chart-wrapper {
             flex: 3;
             padding: 15px;
         }
+        
         .stats-panel {
             flex: 1;
             padding: 20px;
-            background-color: #f8f9fa;
-            border-left: 1px solid #eee;
+            background-color: rgba(10, 30, 45, 0.8);
+            border-left: 1px solid #1e4a6a;
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
+        
         .stat-box {
             margin-bottom: 20px;
             padding: 15px;
-            background: white;
+            background: rgba(16, 37, 53, 0.9);
             border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            border: 1px solid #1e4a6a;
         }
+        
         .stat-title {
             font-weight: bold;
             margin-bottom: 8px;
-            color: #7f8c8d;
+            color: #4fc3f7;
             font-size: 14px;
         }
+        
         .stat-value {
             font-size: 24px;
             font-weight: bold;
-            color: #2c3e50;
+            color: #e0e0e0;
+            text-shadow: 0 0 5px rgba(79, 195, 247, 0.5);
         }
+        
         .chart-title {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 10px;
-            color: #2c3e50;
+            color: #4fc3f7;
             text-align: center;
+            text-shadow: 0 0 5px rgba(79, 195, 247, 0.5);
+            padding: 10px;
+            background: rgba(10, 30, 45, 0.8);
+            border-radius: 6px;
+            border: 1px solid #1e4a6a;
+        }
+        
+        canvas {
+            border-radius: 6px;
+            background: rgba(10, 26, 38, 0.8);
+            padding: 10px;
+            border: 1px solid #1e4a6a;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>环境监测数据分析</h1>
+        <header>
+            <h1>环境监测数据分析</h1>
+            <a href="index.html" class="back-button">返回上级</a>
+        </header>
         
         <div class="controls">
             <div class="control-group">
@@ -305,18 +390,22 @@
                     y: {
                         beginAtZero: false,
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
+                            color: 'rgba(79, 195, 247, 0.1)'
+                        },
+                        ticks: {
+                            color: '#e0e0e0'
                         }
                     },
                     x: {
                         grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
+                            color: 'rgba(79, 195, 247, 0.1)'
                         },
                         ticks: {
                             maxRotation: 45,
                             minRotation: 45,
                             autoSkip: true,
-                            maxTicksLimit: timeRange === 'week' ? 24 : 15
+                            maxTicksLimit: timeRange === 'week' ? 24 : 15,
+                            color: '#e0e0e0'
                         }
                     }
                 },
@@ -326,7 +415,11 @@
                     },
                     tooltip: {
                         mode: 'index',
-                        intersect: false
+                        intersect: false,
+                        backgroundColor: 'rgba(16, 37, 53, 0.9)',
+                        titleColor: '#4fc3f7',
+                        bodyColor: '#e0e0e0',
+                        borderColor: '#2e5a7a'
                     }
                 }
             };
