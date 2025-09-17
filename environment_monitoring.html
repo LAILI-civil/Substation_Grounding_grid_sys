@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环境监测页面</title>
+    <style>
+        /* 添加您的样式 */
+    </style>
+</head>
+<body>
+    <div id="content">
+        <h1>环境监测页面</h1>
+        <p>当前测点ID: <span id="pointId"></span></p>
+        <!-- 其他内容 -->
+    </div>
+
+    <script>
+        // 获取URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        const pointId = urlParams.get('id');
+        
+        // 显示测点ID
+        document.getElementById('pointId').textContent = pointId || '未知';
+        
+        // 根据测点ID加载相应数据
+        // 这里可以添加您的数据加载逻辑
+    </script>
+</body>
+</html>
