@@ -3,142 +3,361 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>接地网腐蚀状态评估示意图</title>
+    <title>变电站接地网腐蚀状态评估系统</title>
     <style>
-        body {
-            font-family: 'Microsoft YaHei', Arial, sans-serif;
+        * {
             margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-            color: #333;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
         }
+        
+        body {
+            background-color: #0a1a2a;
+            color: #e0e0e0;
+            overflow-x: hidden;
+            min-height: 100vh;
+            padding: 20px;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(20, 60, 100, 0.4) 0%, transparent 30%),
+                radial-gradient(circle at 90% 80%, rgba(20, 60, 100, 0.4) 0%, transparent 30%),
+                linear-gradient(to bottom, #0a1a2a, #05121f);
+        }
+        
         .container {
-            max-width: 900px;
+            width: 100%;
+            max-width: 1400px;
             margin: 0 auto;
-            background-color: white;
+            display: flex;
+            flex-direction: column;
+            background: rgba(16, 37, 53, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            border: 1px solid #1e4a6a;
+        }
+        
+        header {
+            background: linear-gradient(to right, #0a2a3a, #0a1a2a);
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
+            border-bottom: 1px solid #1e4a6a;
             text-align: center;
-            color: #2c3e50;
-            margin-bottom: 20px;
+            position: relative;
         }
+        
+        h1 {
+            font-size: 32px;
+            color: #4fc3f7;
+            text-shadow: 0 0 15px rgba(79, 195, 247, 0.7);
+            letter-spacing: 2px;
+            margin: 0;
+            padding: 10px 30px;
+            display: inline-block;
+            border: 1px solid #2e5a7a;
+            border-radius: 8px;
+            background: rgba(10, 30, 45, 0.8);
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
+        }
+        
+        .header-decoration {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            bottom: 0;
+            left: 0;
+            background: linear-gradient(to right, transparent, #4fc3f7, transparent);
+            box-shadow: 0 0 10px #4fc3f7;
+        }
+        
+        .main-content {
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .grid-section {
+            flex: 2;
+            min-width: 600px;
+            background-color: rgba(16, 37, 53, 0.6);
+            border: 1px solid #1e4a6a;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .grid-title {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+            font-size: 18px;
+            text-shadow: 0 0 5px rgba(79, 195, 247, 0.5);
+        }
+        
         .canvas-container {
             width: 100%;
             overflow-x: auto;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #2e5a7a;
+            border-radius: 6px;
+            background: #0a1a2a;
+            padding: 10px;
+            box-shadow: 0 0 20px rgba(0, 150, 250, 0.1);
         }
+        
         #gridCanvas {
             display: block;
             margin: 0 auto;
-            background-color: white;
-            border: 1px solid #ddd;
+            background-color: #0a1a2a;
         }
+        
         .controls {
             display: flex;
             justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
+            gap: 15px;
+            margin-top: 15px;
         }
+        
         button {
-            padding: 8px 16px;
-            background-color: #3498db;
-            color: white;
-            border: none;
+            padding: 10px 20px;
+            background: linear-gradient(to bottom, #2e5a7a, #1e3a5a);
+            color: #e0e0e0;
+            border: 1px solid #4fc3f7;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(79, 195, 247, 0.2);
         }
+        
         button:hover {
-            background-color: #2980b9;
+            background: linear-gradient(to bottom, #3e6a8a, #2e4a6a);
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.4);
+            transform: translateY(-2px);
         }
+        
+        .info-section {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
         .info-panel {
-            background-color: #f9f9f9;
+            background: rgba(16, 37, 53, 0.6);
+            border: 1px solid #1e4a6a;
+            border-radius: 8px;
             padding: 15px;
-            border-radius: 5px;
-            border-left: 4px solid #3498db;
-            margin-top: 20px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
         }
+        
+        .info-panel h3 {
+            color: #4fc3f7;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #2e5a7a;
+            text-shadow: 0 0 5px rgba(79, 195, 247, 0.3);
+        }
+        
         .legend {
             display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 20px;
-            justify-content: center;
+            flex-direction: column;
+            gap: 10px;
         }
+        
         .legend-item {
             display: flex;
             align-items: center;
-            margin-right: 15px;
+            margin-bottom: 8px;
         }
+        
         .legend-color {
             width: 20px;
             height: 20px;
-            margin-right: 5px;
-            border: 1px solid #ccc;
+            margin-right: 10px;
+            border-radius: 3px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
+        
+        .status-overview {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .status-item {
+            background: rgba(10, 30, 45, 0.6);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #2e5a7a;
+        }
+        
+        .status-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4fc3f7;
+            margin: 5px 0;
+            text-shadow: 0 0 8px rgba(79, 195, 247, 0.5);
+        }
+        
+        .data-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .data-card {
+            background: rgba(10, 30, 45, 0.6);
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #2e5a7a;
+        }
+        
+        .data-card h4 {
+            color: #4fc3f7;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #2e5a7a;
+            padding-bottom: 5px;
+        }
+        
         footer {
             text-align: center;
-            margin-top: 30px;
+            padding: 15px;
+            margin-top: 20px;
+            border-top: 1px solid #1e4a6a;
+            color: #5d7a9b;
             font-size: 14px;
-            color: #7f8c8d;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .grid-section, .info-section {
+                min-width: 100%;
+            }
+        }
+        
+        /* 动画效果 */
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* 高亮效果 */
+        .highlight {
+            transition: all 0.3s ease;
+        }
+        
+        .highlight:hover {
+            box-shadow: 0 0 20px rgba(79, 195, 247, 0.4);
+            transform: translateY(-5px);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>接地网腐蚀状态评估示意图</h1>
+        <header>
+            <h1>变电站接地网腐蚀状态评估系统</h1>
+            <div class="header-decoration"></div>
+        </header>
         
-        <div class="canvas-container">
-            <canvas id="gridCanvas" width="800" height="800"></canvas>
+        <div class="main-content">
+            <section class="grid-section highlight">
+                <div class="grid-title">接地网腐蚀状态评估示意图</div>
+                <div class="canvas-container">
+                    <canvas id="gridCanvas" width="700" height="700"></canvas>
+                </div>
+                
+                <div class="controls">
+                    <button id="regenerateBtn">重新生成示意图</button>
+                    <button id="downloadBtn">下载图像</button>
+                    <button id="simulateBtn">模拟腐蚀变化</button>
+                </div>
+            </section>
+            
+            <section class="info-section">
+                <div class="info-panel highlight">
+                    <h3>图例说明</h3>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #4d4d4d;"></div>
+                            <span>接地网节点</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #3a6a8a;"></div>
+                            <span>接地网钢片</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: rgba(255, 80, 80, 0.3);"></div>
+                            <span>腐蚀区域</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: transparent; border: 2px dashed #ff5050;"></div>
+                            <span>腐蚀区域边界</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-panel highlight">
+                    <h3>腐蚀状态概览</h3>
+                    <div class="status-overview">
+                        <div class="status-item">
+                            <div>腐蚀节点数量</div>
+                            <div class="status-value">12</div>
+                            <div>总节点: 100</div>
+                        </div>
+                        <div class="status-item">
+                            <div>腐蚀严重程度</div>
+                            <div class="status-value">中度</div>
+                            <div>需要关注</div>
+                        </div>
+                        <div class="status-item">
+                            <div>最大腐蚀深度</div>
+                            <div class="status-value">1.8mm</div>
+                            <div>安全阈值: 2.0mm</div>
+                        </div>
+                        <div class="status-item">
+                            <div>建议维护时间</div>
+                            <div class="status-value">6个月</div>
+                            <div>定期检查</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-panel highlight">
+                    <h3>实时监测数据</h3>
+                    <div class="data-section">
+                        <div class="data-card">
+                            <h4>土壤电阻率</h4>
+                            <div>当前值: 52.3 Ω·m</div>
+                            <div>变化趋势: <span style="color:#4fc3f7">稳定</span></div>
+                        </div>
+                        <div class="data-card">
+                            <h4>接地电阻</h4>
+                            <div>当前值: 0.38 Ω</div>
+                            <div>变化趋势: <span style="color:#ff5050">上升</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </div>
         
-        <div class="controls">
-            <button id="regenerateBtn">重新生成示意图</button>
-            <button id="downloadBtn">下载图像</button>
-        </div>
-        
-        <div class="info-panel">
-            <h3>图例说明</h3>
-            <div class="legend">
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #4d4d4d;"></div>
-                    <span>接地网节点</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #808080;"></div>
-                    <span>接地网钢片</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: rgba(255, 0, 0, 0.2);"></div>
-                    <span>腐蚀区域</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: white; border: 2px dashed red;"></div>
-                    <span>腐蚀区域边界</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="info-panel">
-            <h3>功能说明</h3>
-            <p>本示意图展示了接地网的腐蚀状态评估结果：</p>
-            <ul>
-                <li>灰色节点和连线表示正常接地网结构</li>
-                <li>红色虚线框表示腐蚀区域边界</li>
-                <li>红色节点和纹理表示严重腐蚀区域</li>
-                <li>点击"重新生成示意图"可以随机生成新的腐蚀区域</li>
-                <li>点击"下载图像"可以保存当前示意图</li>
-            </ul>
-        </div>
+        <footer>
+            <p>变电站接地网数字孪生系统 © 2023 | 基于MATLAB算法实现</p>
+        </footer>
     </div>
-    
-    <footer>
-        <p>基于MATLAB代码实现的Web版本 © 2023</p>
-    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -146,12 +365,13 @@
             const ctx = canvas.getContext('2d');
             const regenerateBtn = document.getElementById('regenerateBtn');
             const downloadBtn = document.getElementById('downloadBtn');
+            const simulateBtn = document.getElementById('simulateBtn');
             
             // 初始化参数
             const gridSize = 10;
             const nodeRadius = 5;
             const cellSize = 60;
-            const padding = 100;
+            const padding = 50;
             
             // 腐蚀区域定义
             let corrosionAreas = [];
@@ -171,24 +391,22 @@
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
                 // 设置背景
-                ctx.fillStyle = 'white';
+                ctx.fillStyle = '#0a1a2a';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
-                // 绘制标题
-                ctx.font = 'bold 16px Arial';
-                ctx.fillStyle = '#2c3e50';
-                ctx.textAlign = 'center';
-                ctx.fillText('接地网腐蚀状态评估示意图', canvas.width / 2, 30);
-                
-                // 绘制坐标轴标签
-                ctx.font = '12px Arial';
-                ctx.fillText('水平位置', canvas.width / 2, canvas.height - 20);
-                
-                ctx.save();
-                ctx.translate(20, canvas.height / 2);
-                ctx.rotate(-Math.PI / 2);
-                ctx.fillText('垂直位置', 0, 0);
-                ctx.restore();
+                // 绘制网格背景
+                ctx.fillStyle = 'rgba(30, 58, 90, 0.2)';
+                for (let i = 0; i <= gridSize; i++) {
+                    for (let j = 0; j <= gridSize; j++) {
+                        if ((i + j) % 2 === 0) {
+                            ctx.fillRect(
+                                padding + j * cellSize - cellSize/2, 
+                                padding + i * cellSize - cellSize/2, 
+                                cellSize, cellSize
+                            );
+                        }
+                    }
+                }
                 
                 // 绘制网格和节点
                 for (let i = 0; i <= gridSize; i++) {
@@ -201,6 +419,9 @@
                         ctx.arc(x, y, nodeRadius, 0, Math.PI * 2);
                         ctx.fillStyle = '#4d4d4d';
                         ctx.fill();
+                        ctx.strokeStyle = '#3a6a8a';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
                         
                         // 绘制水平连接线
                         if (j < gridSize) {
@@ -208,7 +429,7 @@
                             ctx.moveTo(x, y);
                             ctx.lineTo(x + cellSize, y);
                             ctx.lineWidth = 2;
-                            ctx.strokeStyle = '#808080';
+                            ctx.strokeStyle = '#3a6a8a';
                             ctx.stroke();
                         }
                         
@@ -218,7 +439,7 @@
                             ctx.moveTo(x, y);
                             ctx.lineTo(x, y + cellSize);
                             ctx.lineWidth = 2;
-                            ctx.strokeStyle = '#808080';
+                            ctx.strokeStyle = '#3a6a8a';
                             ctx.stroke();
                         }
                     }
@@ -232,7 +453,7 @@
                     const height = area.height * cellSize;
                     
                     // 绘制腐蚀区域背景
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.1)';
+                    ctx.fillStyle = 'rgba(255, 80, 80, 0.2)';
                     ctx.fillRect(x, y, width, height);
                     
                     // 绘制腐蚀区域边界
@@ -240,7 +461,7 @@
                     ctx.rect(x, y, width, height);
                     ctx.lineWidth = 3;
                     ctx.setLineDash([5, 5]);
-                    ctx.strokeStyle = 'red';
+                    ctx.strokeStyle = '#ff5050';
                     ctx.stroke();
                     ctx.setLineDash([]);
                     
@@ -253,7 +474,7 @@
                             // 绘制腐蚀标记
                             ctx.beginPath();
                             ctx.arc(nodeX, nodeY, nodeRadius + 2, 0, Math.PI * 2);
-                            ctx.strokeStyle = 'red';
+                            ctx.strokeStyle = '#ff5050';
                             ctx.lineWidth = 2;
                             ctx.stroke();
                             
@@ -263,7 +484,7 @@
                                 const offsetY = (Math.random() - 0.5) * 10;
                                 ctx.beginPath();
                                 ctx.arc(nodeX + offsetX, nodeY + offsetY, 2, 0, Math.PI * 2);
-                                ctx.fillStyle = 'red';
+                                ctx.fillStyle = '#ff5050';
                                 ctx.fill();
                             }
                         }
@@ -273,53 +494,95 @@
                     const centerX = x + width / 2;
                     const centerY = y + height / 2;
                     
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                    ctx.fillStyle = 'rgba(10, 26, 42, 0.8)';
                     ctx.fillRect(centerX - 40, centerY - 10, 80, 20);
                     
                     ctx.font = 'bold 10px Arial';
-                    ctx.fillStyle = 'red';
+                    ctx.fillStyle = '#ff5050';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText('严重腐蚀', centerX, centerY);
                 });
                 
-                // 绘制图例
-                const legendX = padding + gridSize * cellSize + 30;
-                let legendY = padding;
+                // 绘制坐标轴
+                ctx.strokeStyle = '#3a6a8a';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(padding, padding);
+                ctx.lineTo(padding, padding + gridSize * cellSize);
+                ctx.lineTo(padding + gridSize * cellSize, padding + gridSize * cellSize);
+                ctx.stroke();
                 
+                // 绘制坐标刻度
+                ctx.fillStyle = '#5d7a9b';
                 ctx.font = '12px Arial';
-                ctx.fillStyle = 'black';
-                ctx.textAlign = 'left';
+                ctx.textAlign = 'center';
+                for (let i = 0; i <= gridSize; i++) {
+                    // X轴刻度
+                    ctx.fillText(
+                        i, 
+                        padding + i * cellSize, 
+                        padding + gridSize * cellSize + 15
+                    );
+                    
+                    // Y轴刻度
+                    ctx.fillText(
+                        gridSize - i, 
+                        padding - 15, 
+                        padding + i * cellSize + 5
+                    );
+                }
                 
-                // 节点图例
-                ctx.beginPath();
-                ctx.arc(legendX, legendY, nodeRadius, 0, Math.PI * 2);
-                ctx.fillStyle = '#4d4d4d';
-                ctx.fill();
-                ctx.fillText('接地网节点', legendX + 15, legendY + 4);
+                // 绘制坐标轴标签
+                ctx.fillStyle = '#4fc3f7';
+                ctx.font = '14px Arial';
+                ctx.fillText('水平位置', padding + gridSize * cellSize / 2, padding + gridSize * cellSize + 35);
                 
-                // 连接线图例
-                legendY += 30;
-                ctx.beginPath();
-                ctx.moveTo(legendX - 10, legendY);
-                ctx.lineTo(legendX + 10, legendY);
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = '#808080';
-                ctx.stroke();
-                ctx.fillText('接地网钢片', legendX + 15, legendY + 4);
+                ctx.save();
+                ctx.translate(15, padding + gridSize * cellSize / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('垂直位置', 0, 0);
+                ctx.restore();
+            }
+            
+            // 模拟腐蚀变化
+            function simulateCorrosion() {
+                // 随机修改腐蚀区域
+                corrosionAreas.forEach(area => {
+                    // 随机扩展或缩小腐蚀区域
+                    if (Math.random() > 0.5 && area.width < 4) area.width += 1;
+                    if (Math.random() > 0.5 && area.height < 4) area.height += 1;
+                    if (Math.random() > 0.7 && area.width > 1) area.width -= 1;
+                    if (Math.random() > 0.7 && area.height > 1) area.height -= 1;
+                });
                 
-                // 腐蚀区域图例
-                legendY += 30;
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
-                ctx.fillRect(legendX - 10, legendY - 5, 20, 10);
-                ctx.beginPath();
-                ctx.rect(legendX - 10, legendY - 5, 20, 10);
-                ctx.setLineDash([5, 5]);
-                ctx.strokeStyle = 'red';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.fillText('腐蚀区域', legendX + 15, legendY + 4);
+                // 有10%的概率添加新腐蚀区域
+                if (Math.random() < 0.1 && corrosionAreas.length < 5) {
+                    corrosionAreas.push({
+                        x: Math.floor(Math.random() * 8) + 1,
+                        y: Math.floor(Math.random() * 8) + 1,
+                        width: 1,
+                        height: 1
+                    });
+                }
+                
+                drawGroundGrid();
+                
+                // 更新状态数据
+                updateStatusData();
+            }
+            
+            // 更新状态数据
+            function updateStatusData() {
+                // 这里只是模拟数据更新
+                const statusValue = document.querySelectorAll('.status-value');
+                if (statusValue.length >= 4) {
+                    statusValue[0].textContent = Math.floor(Math.random() * 10) + 10;
+                    const levels = ['轻度', '中度', '严重'];
+                    statusValue[1].textContent = levels[Math.floor(Math.random() * 3)];
+                    statusValue[2].textContent = (Math.random() * 0.5 + 1.5).toFixed(1) + 'mm';
+                    statusValue[3].textContent = Math.floor(Math.random() * 6) + 3 + '个月';
+                }
             }
             
             // 初始化绘图
@@ -330,6 +593,7 @@
             regenerateBtn.addEventListener('click', function() {
                 generateCorrosionAreas();
                 drawGroundGrid();
+                updateStatusData();
             });
             
             // 下载图像
@@ -338,6 +602,25 @@
                 link.download = '接地网腐蚀状态评估示意图.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
+            });
+            
+            // 模拟腐蚀变化
+            simulateBtn.addEventListener('click', function() {
+                simulateCorrosion();
+            });
+            
+            // 添加悬停效果
+            const highlights = document.querySelectorAll('.highlight');
+            highlights.forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    this.style.boxShadow = '0 0 20px rgba(79, 195, 247, 0.4)';
+                    this.style.transform = 'translateY(-5px)';
+                });
+                
+                item.addEventListener('mouseleave', function() {
+                    this.style.boxShadow = '';
+                    this.style.transform = '';
+                });
             });
         });
     </script>
