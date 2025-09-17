@@ -19,7 +19,7 @@
         body {
             background-color: #0a1a2a;
             color: #e0e0e0;
-            overflow: hidden;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -28,7 +28,7 @@
         
         .container {
             width: 100%;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
@@ -206,6 +206,44 @@
             position: relative;
         }
         
+        .point-selector {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        
+        .point-btn {
+            padding: 8px 16px;
+            background: rgba(20, 40, 60, 0.7);
+            color: #4fc3f7;
+            border: 1px solid #2e5a7a;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .point-btn.active {
+            background: rgba(33, 150, 243, 0.3);
+            color: white;
+            border-color: #2196f3;
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+        }
+        
+        .point-btn:hover {
+            background: rgba(33, 150, 243, 0.2);
+        }
+        
+        .heatmap-bg {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: #0a1a2a;
+            border-radius: 8px;
+        }
+        
         @media (max-width: 768px) {
             .data-panel {
                 grid-template-columns: 1fr;
@@ -213,6 +251,10 @@
             
             h1 {
                 font-size: 20px;
+            }
+            
+            .point-selector {
+                flex-wrap: wrap;
             }
         }
     </style>
@@ -226,6 +268,14 @@
         </header>
         
         <div class="content">
+            <div class="point-selector">
+                <button class="point-btn active" data-point="1">测点 1</button>
+                <button class="point-btn" data-point="2">测点 2</button>
+                <button class="point-btn" data-point="3">测点 3</button>
+                <button class="point-btn" data-point="4">测点 4</button>
+                <button class="point-btn" data-point="5">测点 5</button>
+            </div>
+            
             <div class="data-panel">
                 <div class="data-card">
                     <h3>当前电阻值</h3>
@@ -247,13 +297,15 @@
             </div>
             
             <div class="chart-container">
-                <div class="chart-title">接地网电阻变化趋势图表</div>
+                <div class="chart-title" id="trendChartTitle">测点1电阻变化趋势图表</div>
                 <canvas id="trendChart"></canvas>
             </div>
             
             <div class="chart-container">
                 <div class="chart-title">接地网电阻分布热力图</div>
-                <div id="heatmap-container"></div>
+                <div id="heatmap-container">
+                    <div class="heatmap-bg"></div>
+                </div>
             </div>
         </div>
         
@@ -268,6 +320,10 @@
     </div>
 
     <script>
+        // 全局变量存储电阻数据
+        let resistanceData = null;
+        let currentPoint = 1;
+        
         // 生成符合要求的电阻数据
         function generateResistanceData() {
             // 检测年份: 第0年, 第1年, 第10年, 之后每5年一次
@@ -280,7 +336,6 @@
             // 生成5个测点的数据
             for (let i = 1; i <= 5; i++) {
                 const pointData = [];
-                let lastValue = 0;
                 
                 for (let j = 0; j < years.length; j++) {
                     let value;
@@ -302,8 +357,7 @@
                         value = (Math.random() * (max - min) + min).toFixed(2);
                     }
                     
-                    pointData.push(value);
-                    lastValue = value;
+                    pointData.push(parseFloat(value));
                 }
                 
                 data.points[`测点${i}`] = pointData;
@@ -314,25 +368,35 @@
 
         // 生成热力图数据
         function generateHeatmapData() {
-            const data = [];
-            // 模拟5个测点的位置和电阻值
-            const points = [
-                { x: 0.2, y: 0.2, value: 15.2 },
-                { x: 0.8, y: 0.2, value: 18.7 },
-                { x: 0.5, y: 0.5, value: 22.4 },
-                { x: 0.2, y: 0.8, value: 16.9 },
-                { x: 0.8, y: 0.8, value: 20.3 }
+            // 获取最新年份的数据
+            const lastYearIndex = resistanceData.years.length - 1;
+            const pointsData = [];
+            
+            // 收集5个测点的最新电阻值
+            for (let i = 1; i <= 5; i++) {
+                pointsData.push(resistanceData.points[`测点${i}`][lastYearIndex]);
+            }
+            
+            // 定义节点位置（相对于图片容器的百分比）
+            const nodePositions = [
+                {x: 20, y: 20},  // 测点1
+                {x: 80, y: 30},  // 测点2
+                {x: 40, y: 60},  // 测点3
+                {x: 70, y: 70},  // 测点4
+                {x: 30, y: 85}   // 测点5
             ];
             
+            const data = [];
+            
             // 添加主要测点数据
-            points.forEach(point => {
+            for (let i = 0; i < 5; i++) {
                 data.push({
-                    x: Math.floor(point.x * 100),
-                    y: Math.floor(point.y * 100),
-                    value: point.value,
-                    radius: 30
+                    x: Math.floor(nodePositions[i].x),
+                    y: Math.floor(nodePositions[i].y),
+                    value: pointsData[i],
+                    radius: 40
                 });
-            });
+            }
             
             // 添加一些插值点，使热力图更平滑
             for (let i = 0; i < 50; i++) {
@@ -343,14 +407,14 @@
                 let minDist = Infinity;
                 let closestValue = 0;
                 
-                points.forEach(point => {
+                nodePositions.forEach((pos, idx) => {
                     const dist = Math.sqrt(
-                        Math.pow(x - point.x * 100, 2) + 
-                        Math.pow(y - point.y * 100, 2)
+                        Math.pow(x - pos.x, 2) + 
+                        Math.pow(y - pos.y, 2)
                     );
                     if (dist < minDist) {
                         minDist = dist;
-                        closestValue = point.value;
+                        closestValue = pointsData[idx];
                     }
                 });
                 
@@ -381,39 +445,42 @@
             });
             
             const heatmapData = generateHeatmapData();
+            const maxValue = Math.max(...heatmapData.map(d => d.value));
+            const minValue = Math.min(...heatmapData.map(d => d.value));
+            
             heatmap.setData({
-                max: 50,
-                min: 10,
+                max: maxValue,
+                min: minValue,
                 data: heatmapData
             });
         }
 
         // 初始化趋势图
-        function initTrendChart() {
+        function initTrendChart(pointNum) {
             const ctx = document.getElementById('trendChart').getContext('2d');
-            const resistanceData = generateResistanceData();
             
-            const datasets = [];
-            const colors = ['#ff5252', '#4fc3f7', '#4caf50', '#ffc107', '#9c27b0'];
+            // 销毁旧图表（如果存在）
+            if (window.trendChartInstance) {
+                window.trendChartInstance.destroy();
+            }
             
-            Object.keys(resistanceData.points).forEach((point, index) => {
-                datasets.push({
-                    label: point,
-                    data: resistanceData.points[point],
-                    borderColor: colors[index],
-                    backgroundColor: colors[index] + '20',
-                    borderWidth: 2,
-                    pointRadius: 4,
-                    tension: 0.3,
-                    fill: false
-                });
-            });
+            const pointKey = `测点${pointNum}`;
+            const pointData = resistanceData.points[pointKey];
             
-            new Chart(ctx, {
+            window.trendChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: resistanceData.years.map(year => `第${year}年`),
-                    datasets: datasets
+                    datasets: [{
+                        label: pointKey,
+                        data: pointData,
+                        borderColor: '#ff5252',
+                        backgroundColor: '#ff525220',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        tension: 0.3,
+                        fill: true
+                    }]
                 },
                 options: {
                     responsive: true,
@@ -471,44 +538,39 @@
                 }
             });
             
+            // 更新图表标题
+            document.getElementById('trendChartTitle').textContent = `${pointKey}电阻变化趋势图表`;
+            
             // 更新数据面板
-            updateDataPanel(resistanceData);
+            updateDataPanel(pointNum);
         }
 
         // 更新数据面板
-        function updateDataPanel(resistanceData) {
+        function updateDataPanel(pointNum) {
+            const pointKey = `测点${pointNum}`;
+            const pointData = resistanceData.points[pointKey];
+            
             // 获取最新数据（最后一年）
             const lastYearIndex = resistanceData.years.length - 1;
-            const lastYear = resistanceData.years[lastYearIndex];
-            const pointValues = [];
-            
-            Object.keys(resistanceData.points).forEach(point => {
-                pointValues.push(parseFloat(resistanceData.points[point][lastYearIndex]));
-            });
-            
-            // 计算平均值
-            const avgValue = (pointValues.reduce((a, b) => a + b, 0) / pointValues.length).toFixed(2);
+            const currentValue = pointData[lastYearIndex];
             
             // 计算趋势（与上一次检测比较）
             const prevYearIndex = lastYearIndex - 1;
-            const prevAvgValue = prevYearIndex >= 0 ? 
-                (Object.keys(resistanceData.points).reduce((sum, point) => 
-                    sum + parseFloat(resistanceData.points[point][prevYearIndex]), 0) / 5).toFixed(2) : 0;
-            
-            const trendValue = (avgValue - prevAvgValue).toFixed(2);
+            const prevValue = prevYearIndex >= 0 ? pointData[prevYearIndex] : 0;
+            const trendValue = (currentValue - prevValue).toFixed(2);
             const trendText = trendValue >= 0 ? `+${trendValue} mΩ` : `${trendValue} mΩ`;
             
             // 更新电阻值
-            document.getElementById('resistanceValue').textContent = `${avgValue} mΩ`;
+            document.getElementById('resistanceValue').textContent = `${currentValue.toFixed(2)} mΩ`;
             
             // 更新电阻状态
             const resistanceStatus = document.getElementById('resistanceStatus');
             let status, statusClass;
             
-            if (avgValue < 50) {
+            if (currentValue < 50) {
                 status = "正常范围";
                 statusClass = "status-normal";
-            } else if (avgValue < 100) {
+            } else if (currentValue < 100) {
                 status = "需要注意";
                 statusClass = "status-warning";
             } else {
@@ -556,17 +618,47 @@
             return urlParams.get(name);
         }
 
+        // 切换测点
+        function switchPoint(pointNum) {
+            currentPoint = pointNum;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.point-btn').forEach(btn => {
+                if (parseInt(btn.dataset.point) === pointNum) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // 更新图表
+            initTrendChart(pointNum);
+        }
+
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 获取测点ID
             const pointId = getQueryParam('id');
             const pointNum = pointId ? parseInt(pointId) : 1;
+            currentPoint = pointNum;
             
-            // 更新页面标题
-            document.getElementById('pageTitle').textContent = `接地网电阻检测`;
+            // 更新按钮状态
+            document.querySelectorAll('.point-btn').forEach(btn => {
+                if (parseInt(btn.dataset.point) === pointNum) {
+                    btn.classList.add('active');
+                }
+                
+                // 添加点击事件
+                btn.addEventListener('click', function() {
+                    switchPoint(parseInt(this.dataset.point));
+                });
+            });
+            
+            // 生成电阻数据
+            resistanceData = generateResistanceData();
             
             // 初始化图表
-            initTrendChart();
+            initTrendChart(pointNum);
             initHeatmap();
         });
 
