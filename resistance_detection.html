@@ -388,7 +388,7 @@
         }
 
         // 生成热力图数据
-        function generateHeatmapData() {
+        function generateHeatmapData(width, height) {
             // 获取最新年份的数据
             const lastYearIndex = resistanceData.years.length - 1;
             const pointsData = [];
@@ -398,40 +398,42 @@
                 pointsData.push(resistanceData.points[`测点${i}`][lastYearIndex]);
             }
             
-            // 定义节点位置（相对于图片容器的百分比）
+            // 定义节点位置（百分比）
             const nodePositions = [
-                {x: 20, y: 20},  // 测点1
-                {x: 80, y: 30},  // 测点2
-                {x: 40, y: 60},  // 测点3
-                {x: 70, y: 70},  // 测点4
-                {x: 30, y: 85}   // 测点5
+                {x: 0.20, y: 0.20},  // 测点1
+                {x: 0.80, y: 0.30},  // 测点2
+                {x: 0.40, y: 0.60},  // 测点3
+                {x: 0.70, y: 0.70},  // 测点4
+                {x: 0.30, y: 0.85}   // 测点5
             ];
             
             const data = [];
             
-            // 添加主要测点数据
+            // 添加主要测点数据，使用像素坐标
             for (let i = 0; i < 5; i++) {
                 data.push({
-                    x: Math.floor(nodePositions[i].x),
-                    y: Math.floor(nodePositions[i].y),
+                    x: Math.floor(nodePositions[i].x * width),
+                    y: Math.floor(nodePositions[i].y * height),
                     value: pointsData[i],
-                    radius: 40
+                    radius: Math.floor(Math.min(width, height) / 10) // 动态调整半径以适配尺寸
                 });
             }
             
             // 添加一些插值点，使热力图更平滑
-            for (let i = 0; i < 50; i++) {
-                const x = Math.floor(Math.random() * 100);
-                const y = Math.floor(Math.random() * 100);
+            for (let i = 0; i < 100; i++) { // 增加插值点数量以更好地覆盖
+                const randX = Math.random();
+                const randY = Math.random();
+                const x = Math.floor(randX * width);
+                const y = Math.floor(randY * height);
                 
-                // 计算与最近测点的距离
+                // 计算与最近测点的距离（归一化）
                 let minDist = Infinity;
                 let closestValue = 0;
                 
                 nodePositions.forEach((pos, idx) => {
                     const dist = Math.sqrt(
-                        Math.pow(x - pos.x, 2) + 
-                        Math.pow(y - pos.y, 2)
+                        Math.pow(randX - pos.x, 2) + 
+                        Math.pow(randY - pos.y, 2)
                     );
                     if (dist < minDist) {
                         minDist = dist;
@@ -440,8 +442,8 @@
                 });
                 
                 // 距离越远，值越小（模拟电阻扩散效应）
-                const value = closestValue + (minDist / 10);
-                data.push({ x, y, value, radius: 20 });
+                const value = closestValue * (1 - minDist); // 调整值以更好地扩散
+                data.push({ x, y, value, radius: Math.floor(Math.min(width, height) / 20) });
             }
             
             return data;
@@ -450,28 +452,33 @@
         // 初始化热力图
         function initHeatmap() {
             const container = document.getElementById('heatmap-container');
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            
             const heatmap = h337.create({
                 container: container,
-                radius: 30,
+                radius: Math.floor(Math.min(width, height) / 10), // 动态半径
                 maxOpacity: 0.6,
-                minOpacity: 0.2,
-                blur: 0.8,
+                minOpacity: 0.1,
+                blur: 0.85,
                 gradient: {
-                    '0.2': 'blue',
-                    '0.4': 'cyan',
-                    '0.6': 'lime',
+                    '0.1': 'navy',
+                    '0.3': 'blue',
+                    '0.5': 'cyan',
+                    '0.7': 'lime',
                     '0.8': 'yellow',
+                    '0.95': 'orange',
                     '1.0': 'red'
                 }
             });
             
-            const heatmapData = generateHeatmapData();
+            const heatmapData = generateHeatmapData(width, height);
             const maxValue = Math.max(...heatmapData.map(d => d.value));
             const minValue = Math.min(...heatmapData.map(d => d.value));
             
             heatmap.setData({
                 max: maxValue,
-                min: minValue,
+                min: minValue || 0,
                 data: heatmapData
             });
         }
