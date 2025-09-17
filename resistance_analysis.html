@@ -1,1 +1,458 @@
-11
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>接地网电阻增长预测 - 卡尔曼滤波分析</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f7f9;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 30px;
+        }
+        .input-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .results-table th, .results-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .results-table th {
+            background-color: #f2f2f2;
+        }
+        .current-year {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        .instructions {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #3498db;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .param-controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .param-control {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>接地网电阻增长的卡尔曼滤波预测</h1>
+        
+        <div class="instructions">
+            <p>此工具使用卡尔曼滤波算法预测接地网电阻的未来增长趋势。请在下方输入或修改测量数据，然后点击"计算预测"按钮。</p>
+        </div>
+
+        <div class="input-section">
+            <h3>测量数据输入</h3>
+            <p>年份: [0, 1, 5, 10, 15, 20, 25, 30] 年</p>
+            <div class="input-grid" id="inputContainer">
+                <!-- 输入框将通过JS动态生成 -->
+            </div>
+
+            <div class="param-controls">
+                <div class="param-control">
+                    <label for="qValue">过程噪声协方差 (Q):</label>
+                    <input type="number" id="qValue" step="0.1" value="0.5" min="0">
+                </div>
+                <div class="param-control">
+                    <label for="rValue">测量噪声协方差 (R):</label>
+                    <input type="number" id="rValue" step="0.1" value="2" min="0">
+                </div>
+            </div>
+
+            <button id="calculateBtn">计算预测</button>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="resistanceChart"></canvas>
+        </div>
+
+        <div>
+            <h3>预测结果</h3>
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>年份</th>
+                        <th>电阻值 (mΩ)</th>
+                        <th>不确定性 (±2σ)</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                    <!-- 结果将通过JS动态生成 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 初始化数据
+        const years = [0, 1, 5, 10, 15, 20, 25, 30];
+        const measurementYears = [0, 1, 5, 10, 15];
+        const futureYears = [20, 25, 30];
+        let z = [38, 42, 50, 57, 68, NaN, NaN, NaN];
+        
+        // 获取DOM元素
+        const inputContainer = document.getElementById('inputContainer');
+        const resultsBody = document.getElementById('resultsBody');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const qValueInput = document.getElementById('qValue');
+        const rValueInput = document.getElementById('rValue');
+        
+        // 创建输入框
+        function createInputs() {
+            inputContainer.innerHTML = '';
+            z.forEach((value, index) => {
+                const inputGroup = document.createElement('div');
+                inputGroup.className = 'input-group';
+                
+                const label = document.createElement('label');
+                label.textContent = `${years[index]}年`;
+                
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.step = '0.1';
+                input.value = isNaN(value) ? '' : value;
+                input.id = `input-${index}`;
+                input.placeholder = 'NaN';
+                
+                inputGroup.appendChild(label);
+                inputGroup.appendChild(input);
+                inputContainer.appendChild(inputGroup);
+            });
+        }
+        
+        // 从输入框获取数据
+        function getInputData() {
+            const newZ = [];
+            for (let i = 0; i < years.length; i++) {
+                const inputValue = document.getElementById(`input-${i}`).value;
+                newZ.push(inputValue === '' ? NaN : parseFloat(inputValue));
+            }
+            return newZ;
+        }
+        
+        // 卡尔曼滤波计算
+        function kalmanFilter(data, Q, R) {
+            // 初始化
+            let x = data[0]; // 初始状态估计
+            let P = 1;      // 初始估计误差协方差
+            
+            const A = 1;    // 状态转移矩阵
+            const H = 1;    // 观测矩阵
+            
+            const filteredValues = [x];
+            const filteredCovariance = [P];
+            
+            // 卡尔曼滤波过程
+            for (let k = 1; k < years.length; k++) {
+                // 时间步长
+                const dt = years[k] - years[k-1];
+                
+                // 预测步骤
+                const x_pred = A * x;
+                const P_pred = A * P * A + Q * dt;
+                
+                // 如果有测量数据，则更新
+                if (!isNaN(data[k])) {
+                    // 更新步骤
+                    const K = P_pred * H / (H * P_pred * H + R);
+                    x = x_pred + K * (data[k] - H * x_pred);
+                    P = (1 - K * H) * P_pred;
+                } else {
+                    // 没有测量数据，只使用预测值
+                    x = x_pred;
+                    P = P_pred;
+                }
+                
+                // 存储结果
+                filteredValues.push(x);
+                filteredCovariance.push(P);
+            }
+            
+            return {
+                values: filteredValues,
+                covariance: filteredCovariance
+            };
+        }
+        
+        // 更新结果表格
+        function updateResultsTable(filteredValues, stdDev) {
+            resultsBody.innerHTML = '';
+            
+            for (let i = 0; i < years.length; i++) {
+                const row = document.createElement('tr');
+                
+                // 年份列
+                const yearCell = document.createElement('td');
+                yearCell.textContent = years[i];
+                if (years[i] === 15) {
+                    yearCell.className = 'current-year';
+                }
+                row.appendChild(yearCell);
+                
+                // 电阻值列
+                const valueCell = document.createElement('td');
+                valueCell.textContent = filteredValues[i].toFixed(2);
+                row.appendChild(valueCell);
+                
+                // 不确定性列
+                const uncertaintyCell = document.createElement('td');
+                uncertaintyCell.textContent = (2 * stdDev[i]).toFixed(2);
+                row.appendChild(uncertaintyCell);
+                
+                resultsBody.appendChild(row);
+            }
+        }
+        
+        // 绘制图表
+        let resistanceChart = null;
+        function drawChart(data, filteredValues, upperBound, lowerBound) {
+            const ctx = document.getElementById('resistanceChart').getContext('2d');
+            
+            // 如果已有图表，先销毁
+            if (resistanceChart) {
+                resistanceChart.destroy();
+            }
+            
+            // 准备数据点
+            const measuredData = [];
+            const measuredYears = [];
+            
+            for (let i = 0; i < data.length; i++) {
+                if (!isNaN(data[i])) {
+                    measuredData.push(data[i]);
+                    measuredYears.push(years[i]);
+                }
+            }
+            
+            resistanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [
+                        {
+                            label: '测量数据',
+                            data: data.map((value, index) => 
+                                isNaN(value) ? null : {x: years[index], y: value}
+                            ),
+                            backgroundColor: 'rgba(255, 0, 0, 1)',
+                            borderColor: 'rgba(255, 0, 0, 1)',
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            showLine: false
+                        },
+                        {
+                            label: '卡尔曼滤波结果',
+                            data: filteredValues.map((value, index) => 
+                                ({x: years[index], y: value})
+                            ),
+                            backgroundColor: 'rgba(0, 0, 255, 0.2)',
+                            borderColor: 'rgba(0, 0, 255, 1)',
+                            borderWidth: 2,
+                            fill: false,
+                            pointRadius: 3
+                        },
+                        {
+                            label: '95%置信区间上限',
+                            data: upperBound.map((value, index) => 
+                                ({x: years[index], y: value})
+                            ),
+                            backgroundColor: 'rgba(128, 128, 128, 0.1)',
+                            borderColor: 'rgba(128, 128, 128, 0.3)',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            fill: '+1'
+                        },
+                        {
+                            label: '95%置信区间下限',
+                            data: lowerBound.map((value, index) => 
+                                ({x: years[index], y: value})
+                            ),
+                            backgroundColor: 'rgba(128, 128, 128, 0.1)',
+                            borderColor: 'rgba(128, 128, 128, 0.3)',
+                            borderWidth: 1,
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '时间 (年)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '电阻值 (mΩ)'
+                            },
+                            suggestedMin: 30,
+                            suggestedMax: 90,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        annotation: {
+                            annotations: {
+                                line1: {
+                                    type: 'line',
+                                    mode: 'vertical',
+                                    scaleID: 'x',
+                                    value: 15,
+                                    borderColor: 'black',
+                                    borderWidth: 1.5,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        display: true,
+                                        content: '当前年份: 15年',
+                                        position: 'start'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 添加当前年份的垂直线
+            Chart.helpers.merge(resistanceChart.options.plugins.annotation.annotations, {
+                line1: {
+                    type: 'line',
+                    mode: 'vertical',
+                    scaleID: 'x',
+                    value: 15,
+                    borderColor: 'black',
+                    borderWidth: 1.5,
+                    borderDash: [5, 5],
+                    label: {
+                        display: true,
+                        content: '当前年份: 15年',
+                        position: 'start'
+                    }
+                }
+            });
+            resistanceChart.update();
+        }
+        
+        // 计算按钮点击事件
+        calculateBtn.addEventListener('click', function() {
+            // 获取输入数据
+            const inputData = getInputData();
+            const Q = parseFloat(qValueInput.value);
+            const R = parseFloat(rValueInput.value);
+            
+            // 执行卡尔曼滤波
+            const result = kalmanFilter(inputData, Q, R);
+            const filteredValues = result.values;
+            const filteredCovariance = result.covariance;
+            
+            // 计算不确定性范围 (2σ, 约95%置信区间)
+            const stdDev = filteredCovariance.map(p => Math.sqrt(p));
+            const upperBound = filteredValues.map((value, index) => value + 2 * stdDev[index]);
+            const lowerBound = filteredValues.map((value, index) => value - 2 * stdDev[index]);
+            
+            // 更新结果表格
+            updateResultsTable(filteredValues, stdDev);
+            
+            // 绘制图表
+            drawChart(inputData, filteredValues, upperBound, lowerBound);
+        });
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            createInputs();
+            
+            // 初始计算
+            calculateBtn.click();
+        });
+    </script>
+</body>
+</html>
