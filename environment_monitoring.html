@@ -3,28 +3,427 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>环境监测页面</title>
+    <title>环境监测系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* 添加您的样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .point-info {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+        
+        .current-time {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        .chart-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        #radarChart {
+            width: 100%;
+            height: 400px;
+        }
+        
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .temp-icon {
+            color: #ff6b6b;
+        }
+        
+        .humidity-icon {
+            color: #4ecdc4;
+        }
+        
+        .ph-icon {
+            color: #ffe66d;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        
+        .data-table {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        th {
+            background-color: rgba(0, 0, 0, 0.2);
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard, .stats-container {
+                flex-direction: column;
+            }
+            
+            .chart-container, .stat-card {
+                min-width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="content">
-        <h1>环境监测页面</h1>
-        <p>当前测点ID: <span id="pointId"></span></p>
-        <!-- 其他内容 -->
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-leaf"></i> 环境监测系统</h1>
+            <p class="point-info">当前测点ID: <span id="pointId">未知</span></p>
+            <p class="current-time" id="currentTime"></p>
+        </header>
+        
+        <div class="dashboard">
+            <div class="chart-container">
+                <h2 class="chart-title">环境指标雷达图</h2>
+                <div id="radarChart"></div>
+            </div>
+        </div>
+        
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon temp-icon">
+                    <i class="fas fa-temperature-high"></i>
+                </div>
+                <div class="stat-value" id="tempValue">--</div>
+                <div class="stat-label">温度 (°C)</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon humidity-icon">
+                    <i class="fas fa-tint"></i>
+                </div>
+                <div class="stat-value" id="humidityValue">--</div>
+                <div class="stat-label">湿度 (%)</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon ph-icon">
+                    <i class="fas fa-vial"></i>
+                </div>
+                <div class="stat-value" id="phValue">--</div>
+                <div class="stat-label">pH值</div>
+            </div>
+        </div>
+        
+        <div class="data-table">
+            <h2 class="chart-title">最近24小时数据记录</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>时间</th>
+                        <th>温度 (°C)</th>
+                        <th>湿度 (%)</th>
+                        <th>pH值</th>
+                    </tr>
+                </thead>
+                <tbody id="dataTableBody">
+                    <!-- 数据将通过JavaScript填充 -->
+                </tbody>
+            </table>
+        </div>
+        
+        <footer>
+            <p>环境监测系统 &copy; 2023 | 数据更新于: <span id="updateTime"></span></p>
+        </footer>
     </div>
 
     <script>
         // 获取URL参数
         const urlParams = new URLSearchParams(window.location.search);
-        const pointId = urlParams.get('id');
+        const pointId = urlParams.get('id') || '未知';
         
         // 显示测点ID
-        document.getElementById('pointId').textContent = pointId || '未知';
+        document.getElementById('pointId').textContent = pointId;
         
-        // 根据测点ID加载相应数据
-        // 这里可以添加您的数据加载逻辑
+        // 更新当前时间
+        function updateCurrentTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleString('zh-CN');
+            document.getElementById('updateTime').textContent = now.toLocaleString('zh-CN');
+        }
+        
+        updateCurrentTime();
+        setInterval(updateCurrentTime, 1000);
+        
+        // 生成符合昼夜规律的随机数据
+        function generateEnvironmentalData() {
+            const now = new Date();
+            const hour = now.getHours();
+            
+            // 模拟昼夜温度变化 (10°C - 30°C)
+            const minTemp = 10;
+            const maxTemp = 30;
+            // 使用正弦函数模拟昼夜变化，峰值在下午2点(14点)
+            const temp = minTemp + (maxTemp - minTemp) * 
+                         (0.5 + 0.5 * Math.sin((hour - 6) * Math.PI / 12));
+            
+            // 模拟湿度变化 (30% - 80%)，与温度相反
+            const minHumidity = 30;
+            const maxHumidity = 80;
+            const humidity = minHumidity + (maxHumidity - minHumidity) * 
+                            (0.5 - 0.5 * Math.sin((hour - 6) * Math.PI / 12));
+            
+            // pH值每天变化一次 (6.0 - 8.0)
+            // 使用日期作为随机种子，确保同一天内pH值不变
+            const daySeed = now.toDateString().length;
+            const ph = 6.0 + (2.0 * (pointId.length + daySeed) % 100) / 100;
+            
+            return {
+                temperature: temp.toFixed(1),
+                humidity: humidity.toFixed(1),
+                ph: ph.toFixed(1)
+            };
+        }
+        
+        // 生成24小时历史数据
+        function generateHistoricalData() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const data = [];
+            
+            for (let i = 23; i >= 0; i--) {
+                const hour = (currentHour - i + 24) % 24;
+                
+                // 模拟历史温度
+                const minTemp = 10;
+                const maxTemp = 30;
+                const temp = minTemp + (maxTemp - minTemp) * 
+                           (0.5 + 0.5 * Math.sin((hour - 6) * Math.PI / 12));
+                
+                // 模拟历史湿度
+                const minHumidity = 30;
+                const maxHumidity = 80;
+                const humidity = minHumidity + (maxHumidity - minHumidity) * 
+                               (0.5 - 0.5 * Math.sin((hour - 6) * Math.PI / 12));
+                
+                // pH值每天变化一次
+                const daySeed = now.toDateString().length;
+                const ph = 6.0 + (2.0 * (pointId.length + daySeed) % 100) / 100;
+                
+                data.push({
+                    time: `${hour.toString().padStart(2, '0')}:00`,
+                    temperature: temp.toFixed(1),
+                    humidity: humidity.toFixed(1),
+                    ph: ph.toFixed(1)
+                });
+            }
+            
+            return data;
+        }
+        
+        // 更新页面数据
+        function updateData() {
+            const currentData = generateEnvironmentalData();
+            const historicalData = generateHistoricalData();
+            
+            // 更新当前数值显示
+            document.getElementById('tempValue').textContent = currentData.temperature;
+            document.getElementById('humidityValue').textContent = currentData.humidity;
+            document.getElementById('phValue').textContent = currentData.ph;
+            
+            // 更新数据表格
+            const tableBody = document.getElementById('dataTableBody');
+            tableBody.innerHTML = '';
+            
+            historicalData.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.time}</td>
+                    <td>${item.temperature}</td>
+                    <td>${item.humidity}</td>
+                    <td>${item.time === '00:00' ? item.ph : '-'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // 更新雷达图
+            updateRadarChart(currentData);
+        }
+        
+        // 初始化并更新雷达图
+        function updateRadarChart(data) {
+            const chartDom = document.getElementById('radarChart');
+            const chart = echarts.init(chartDom);
+            
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'item'
+                },
+                radar: {
+                    indicator: [
+                        { name: '温度', max: 40 },
+                        { name: '湿度', max: 100 },
+                        { name: 'pH值', max: 14 }
+                    ],
+                    shape: 'circle',
+                    splitNumber: 5,
+                    axisName: {
+                        color: '#fff'
+                    },
+                    splitLine: {
+                        lineStyle: {
+                            color: 'rgba(255, 255, 255, 0.3)'
+                        }
+                    },
+                    splitArea: {
+                        show: true,
+                        areaStyle: {
+                            color: ['rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0.1)']
+                        }
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: 'rgba(255, 255, 255, 0.5)'
+                        }
+                    }
+                },
+                series: [{
+                    name: '环境指标',
+                    type: 'radar',
+                    data: [{
+                        value: [data.temperature, data.humidity, data.ph],
+                        name: '当前数值',
+                        symbol: 'circle',
+                        symbolSize: 10,
+                        lineStyle: {
+                            width: 2
+                        },
+                        areaStyle: {
+                            color: new echarts.graphic.RadialGradient(0.5, 0.5, 1, [
+                                { color: 'rgba(255, 141, 84, 0.8)', offset: 0 },
+                                { color: 'rgba(255, 141, 84, 0.2)', offset: 1 }
+                            ])
+                        }
+                    }]
+                }]
+            };
+            
+            chart.setOption(option);
+            
+            // 响应窗口大小变化
+            window.addEventListener('resize', function() {
+                chart.resize();
+            });
+        }
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            updateData();
+            // 每小时更新一次数据
+            setInterval(updateData, 3600000);
+        });
     </script>
 </body>
 </html>
