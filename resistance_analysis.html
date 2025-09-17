@@ -620,12 +620,10 @@
             drawChart(inputData, filteredValues, upperBound, lowerBound);
         });
         
-        // 返回上级按钮点击事件
+        // 返回上级按钮点击事件 - 现在会跳转到指定的GitHub主页
         goBackBtn.addEventListener('click', function() {
-            // 这里可以替换为实际的返回逻辑
-            alert('返回上级功能已触发。在实际应用中，这里将执行返回上级页面的操作。');
-            // 实际使用时可以取消下面的注释，以启用浏览器返回功能
-            // history.back();
+            // 跳转到指定的GitHub主页
+            window.location.href = "https://laili-civil.github.io/Substation_Grounding_grid_sys/";
         });
         
         // 初始化页面
