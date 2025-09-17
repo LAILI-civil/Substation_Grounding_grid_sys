@@ -403,11 +403,11 @@
                 modal.style.display = 'none';
             });
             
-            // 确认导航
+            // 确认导航 - 修改为实际跳转
             confirmNavigate.addEventListener('click', function() {
                 modal.style.display = 'none';
-                alert(`在实际应用中，将跳转到: ${targetURL}`);
-                // 实际应用中这里应该是: window.location.href = targetURL;
+                // 实际跳转到目标页面
+                window.location.href = targetURL;
             });
             
             // 点击模态框外部关闭
