@@ -142,7 +142,7 @@
         
         .chart-container {
             width: 100%;
-            height: 300px;
+            height: 500px; /* 增加高度以使热力图更大，并更好地适配网页 */
             background: rgba(20, 40, 60, 0.7);
             border: 1px solid #2e5a7a;
             border-radius: 8px;
@@ -244,6 +244,18 @@
             border-radius: 8px;
         }
         
+        .marker {
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 4px;
+            border-radius: 3px;
+            transform: translate(-50%, -50%);
+            z-index: 10; /* 确保标记在热力图上方 */
+            pointer-events: none;
+        }
+        
         @media (max-width: 768px) {
             .data-panel {
                 grid-template-columns: 1fr;
@@ -255,6 +267,10 @@
             
             .point-selector {
                 flex-wrap: wrap;
+            }
+            
+            .chart-container {
+                height: 400px; /* 在小屏上略微减小高度以适配 */
             }
         }
     </style>
@@ -305,6 +321,11 @@
                 <div class="chart-title">接地网电阻分布热力图</div>
                 <div id="heatmap-container">
                     <div class="heatmap-bg"></div>
+                    <div class="marker" style="left: 20%; top: 20%;">测点1</div>
+                    <div class="marker" style="left: 80%; top: 30%;">测点2</div>
+                    <div class="marker" style="left: 40%; top: 60%;">测点3</div>
+                    <div class="marker" style="left: 70%; top: 70%;">测点4</div>
+                    <div class="marker" style="left: 30%; top: 85%;">测点5</div>
                 </div>
             </div>
         </div>
