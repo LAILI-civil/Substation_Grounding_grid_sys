@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>接地网1#电阻检测</title>
+    <title>接地网电阻检测</title>
     <style>
         * {
             margin: 0;
@@ -207,7 +207,7 @@
     <div class="container">
         <header>
             <button class="back-btn" onclick="goBack()">返回主页</button>
-            <h1>接地网1#电阻检测</h1>
+            <h1 id="pageTitle">接地网电阻检测</h1>
             <div style="width: 100px;"></div> <!-- 用于平衡布局 -->
         </header>
         
@@ -215,28 +215,28 @@
             <div class="data-panel">
                 <div class="data-card">
                     <h3>当前电阻值</h3>
-                    <div class="data-value">0.58 Ω</div>
-                    <div class="data-status status-normal">正常范围</div>
+                    <div class="data-value" id="resistanceValue">-- Ω</div>
+                    <div class="data-status" id="resistanceStatus">加载中...</div>
                 </div>
                 
                 <div class="data-card">
                     <h3>最近检测时间</h3>
-                    <div class="data-value">2023-11-05 14:32</div>
-                    <div class="data-status status-normal">数据最新</div>
+                    <div class="data-value" id="lastCheckTime">--</div>
+                    <div class="data-status" id="dataFreshnessStatus">加载中...</div>
                 </div>
                 
                 <div class="data-card">
                     <h3>历史变化趋势</h3>
-                    <div class="data-value">+0.02 Ω</div>
-                    <div class="data-status status-warning">轻微上升</div>
+                    <div class="data-value" id="trendValue">-- Ω</div>
+                    <div class="data-status" id="trendStatus">加载中...</div>
                 </div>
             </div>
             
-            <div class="chart-container">
+            <div class="chart-container" id="trendChart">
                 电阻变化趋势图表将在这里显示
             </div>
             
-            <div class="chart-container">
+            <div class="chart-container" id="distributionChart">
                 电阻分布热力图将在这里显示
             </div>
         </div>
@@ -252,6 +252,142 @@
     </div>
 
     <script>
+        // 模拟数据 - 在实际应用中，这些数据可能来自API或数据库
+        const resistanceData = {
+            1: {
+                value: "0.58 Ω",
+                status: "normal",
+                lastCheck: "2023-11-05 14:32",
+                dataStatus: "normal",
+                trend: "+0.02 Ω",
+                trendStatus: "warning"
+            },
+            2: {
+                value: "0.62 Ω",
+                status: "normal",
+                lastCheck: "2023-11-05 13:45",
+                dataStatus: "normal",
+                trend: "+0.05 Ω",
+                trendStatus: "warning"
+            },
+            3: {
+                value: "0.71 Ω",
+                status: "warning",
+                lastCheck: "2023-11-05 12:18",
+                dataStatus: "normal",
+                trend: "+0.10 Ω",
+                trendStatus: "danger"
+            },
+            4: {
+                value: "0.55 Ω",
+                status: "normal",
+                lastCheck: "2023-11-05 15:20",
+                dataStatus: "normal",
+                trend: "-0.03 Ω",
+                trendStatus: "normal"
+            },
+            5: {
+                value: "0.89 Ω",
+                status: "danger",
+                lastCheck: "2023-11-05 10:55",
+                dataStatus: "warning",
+                trend: "+0.15 Ω",
+                trendStatus: "danger"
+            }
+        };
+
+        // 获取URL参数
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取测点ID
+            const pointId = getQueryParam('id');
+            const pointNum = pointId ? parseInt(pointId) : 1;
+            
+            // 更新页面标题
+            document.getElementById('pageTitle').textContent = `接地网${pointNum}#电阻检测`;
+            
+            // 加载对应测点的数据
+            loadPointData(pointNum);
+        });
+
+        // 加载测点数据
+        function loadPointData(pointId) {
+            const data = resistanceData[pointId] || resistanceData[1]; // 默认使用测点1的数据
+            
+            // 更新电阻值
+            document.getElementById('resistanceValue').textContent = data.value;
+            
+            // 更新电阻状态
+            const resistanceStatus = document.getElementById('resistanceStatus');
+            resistanceStatus.textContent = getStatusText(data.status);
+            resistanceStatus.className = 'data-status ' + getStatusClass(data.status);
+            
+            // 更新检测时间
+            document.getElementById('lastCheckTime').textContent = data.lastCheck;
+            
+            // 更新数据新鲜度状态
+            const dataFreshnessStatus = document.getElementById('dataFreshnessStatus');
+            dataFreshnessStatus.textContent = getDataStatusText(data.dataStatus);
+            dataFreshnessStatus.className = 'data-status ' + getStatusClass(data.dataStatus);
+            
+            // 更新趋势值
+            document.getElementById('trendValue').textContent = data.trend;
+            
+            // 更新趋势状态
+            const trendStatus = document.getElementById('trendStatus');
+            trendStatus.textContent = getTrendStatusText(data.trendStatus);
+            trendStatus.className = 'data-status ' + getStatusClass(data.trendStatus);
+            
+            // 更新图表标题
+            document.getElementById('trendChart').innerHTML = `测点${pointId}电阻变化趋势图表将在这里显示`;
+            document.getElementById('distributionChart').innerHTML = `测点${pointId}电阻分布热力图将在这里显示`;
+        }
+
+        // 获取状态文本
+        function getStatusText(status) {
+            switch(status) {
+                case 'normal': return '正常范围';
+                case 'warning': return '需要注意';
+                case 'danger': return '危险状态';
+                default: return '未知状态';
+            }
+        }
+
+        // 获取数据状态文本
+        function getDataStatusText(status) {
+            switch(status) {
+                case 'normal': return '数据最新';
+                case 'warning': return '数据稍旧';
+                case 'danger': return '数据过时';
+                default: return '未知状态';
+            }
+        }
+
+        // 获取趋势状态文本
+        function getTrendStatusText(status) {
+            switch(status) {
+                case 'normal': return '稳定';
+                case 'warning': return '轻微变化';
+                case 'danger': return '显著变化';
+                default: return '未知状态';
+            }
+        }
+
+        // 获取状态CSS类
+        function getStatusClass(status) {
+            switch(status) {
+                case 'normal': return 'status-normal';
+                case 'warning': return 'status-warning';
+                case 'danger': return 'status-danger';
+                default: return 'status-normal';
+            }
+        }
+
         function goBack() {
             // 返回主页面
             window.location.href = 'index.html';
