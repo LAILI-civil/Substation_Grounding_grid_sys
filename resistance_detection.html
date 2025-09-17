@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>接地网电阻检测</title>
+    <!-- 引入Chart.js库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入Heatmap.js库 -->
+    <script src="https://cdn.jsdelivr.net/npm/heatmapjs@2.0.2/heatmap.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -144,10 +148,14 @@
             border-radius: 8px;
             margin-bottom: 20px;
             padding: 15px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #5d7c8a;
+            position: relative;
+        }
+        
+        .chart-title {
+            text-align: center;
+            color: #4fc3f7;
+            margin-bottom: 10px;
+            font-size: 16px;
         }
         
         .controls {
@@ -192,6 +200,12 @@
             background: rgba(10, 30, 45, 0.5);
         }
         
+        #heatmap-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
         @media (max-width: 768px) {
             .data-panel {
                 grid-template-columns: 1fr;
@@ -215,7 +229,7 @@
             <div class="data-panel">
                 <div class="data-card">
                     <h3>当前电阻值</h3>
-                    <div class="data-value" id="resistanceValue">-- Ω</div>
+                    <div class="data-value" id="resistanceValue">-- mΩ</div>
                     <div class="data-status" id="resistanceStatus">加载中...</div>
                 </div>
                 
@@ -227,17 +241,19 @@
                 
                 <div class="data-card">
                     <h3>历史变化趋势</h3>
-                    <div class="data-value" id="trendValue">-- Ω</div>
+                    <div class="data-value" id="trendValue">-- mΩ</div>
                     <div class="data-status" id="trendStatus">加载中...</div>
                 </div>
             </div>
             
-            <div class="chart-container" id="trendChart">
-                电阻变化趋势图表将在这里显示
+            <div class="chart-container">
+                <div class="chart-title">接地网电阻变化趋势图表</div>
+                <canvas id="trendChart"></canvas>
             </div>
             
-            <div class="chart-container" id="distributionChart">
-                电阻分布热力图将在这里显示
+            <div class="chart-container">
+                <div class="chart-title">接地网电阻分布热力图</div>
+                <div id="heatmap-container"></div>
             </div>
         </div>
         
@@ -252,49 +268,287 @@
     </div>
 
     <script>
-        // 模拟数据 - 在实际应用中，这些数据可能来自API或数据库
-        const resistanceData = {
-            1: {
-                value: "0.58 Ω",
-                status: "normal",
-                lastCheck: "2023-11-05 14:32",
-                dataStatus: "normal",
-                trend: "+0.02 Ω",
-                trendStatus: "warning"
-            },
-            2: {
-                value: "0.62 Ω",
-                status: "normal",
-                lastCheck: "2023-11-05 13:45",
-                dataStatus: "normal",
-                trend: "+0.05 Ω",
-                trendStatus: "warning"
-            },
-            3: {
-                value: "0.71 Ω",
-                status: "warning",
-                lastCheck: "2023-11-05 12:18",
-                dataStatus: "normal",
-                trend: "+0.10 Ω",
-                trendStatus: "danger"
-            },
-            4: {
-                value: "0.55 Ω",
-                status: "normal",
-                lastCheck: "2023-11-05 15:20",
-                dataStatus: "normal",
-                trend: "-0.03 Ω",
-                trendStatus: "normal"
-            },
-            5: {
-                value: "0.89 Ω",
-                status: "danger",
-                lastCheck: "2023-11-05 10:55",
-                dataStatus: "warning",
-                trend: "+0.15 Ω",
-                trendStatus: "danger"
+        // 生成符合要求的电阻数据
+        function generateResistanceData() {
+            // 检测年份: 第0年, 第1年, 第10年, 之后每5年一次
+            const years = [0, 1, 10, 15, 20, 25, 30];
+            const data = {
+                years: years,
+                points: {}
+            };
+            
+            // 生成5个测点的数据
+            for (let i = 1; i <= 5; i++) {
+                const pointData = [];
+                let lastValue = 0;
+                
+                for (let j = 0; j < years.length; j++) {
+                    let value;
+                    if (years[j] === 0) {
+                        // 第0年: 3-10 mΩ
+                        value = (Math.random() * 7 + 3).toFixed(2);
+                    } else if (years[j] === 1) {
+                        // 第1年: 3.5-15 mΩ，且比第0年高
+                        const min = Math.max(3.5, parseFloat(pointData[j-1]) + 0.1);
+                        value = (Math.random() * (15 - min) + min).toFixed(2);
+                    } else if (years[j] === 10) {
+                        // 第10年: 10-50 mΩ，且比第1年高
+                        const min = Math.max(10, parseFloat(pointData[j-1]) + 0.5);
+                        value = (Math.random() * (50 - min) + min).toFixed(2);
+                    } else {
+                        // 后续年份: 逐年递增
+                        const min = parseFloat(pointData[j-1]) + 0.5;
+                        const max = min + 10;
+                        value = (Math.random() * (max - min) + min).toFixed(2);
+                    }
+                    
+                    pointData.push(value);
+                    lastValue = value;
+                }
+                
+                data.points[`测点${i}`] = pointData;
             }
-        };
+            
+            return data;
+        }
+
+        // 生成热力图数据
+        function generateHeatmapData() {
+            const data = [];
+            // 模拟5个测点的位置和电阻值
+            const points = [
+                { x: 0.2, y: 0.2, value: 15.2 },
+                { x: 0.8, y: 0.2, value: 18.7 },
+                { x: 0.5, y: 0.5, value: 22.4 },
+                { x: 0.2, y: 0.8, value: 16.9 },
+                { x: 0.8, y: 0.8, value: 20.3 }
+            ];
+            
+            // 添加主要测点数据
+            points.forEach(point => {
+                data.push({
+                    x: Math.floor(point.x * 100),
+                    y: Math.floor(point.y * 100),
+                    value: point.value,
+                    radius: 30
+                });
+            });
+            
+            // 添加一些插值点，使热力图更平滑
+            for (let i = 0; i < 50; i++) {
+                const x = Math.floor(Math.random() * 100);
+                const y = Math.floor(Math.random() * 100);
+                
+                // 计算与最近测点的距离
+                let minDist = Infinity;
+                let closestValue = 0;
+                
+                points.forEach(point => {
+                    const dist = Math.sqrt(
+                        Math.pow(x - point.x * 100, 2) + 
+                        Math.pow(y - point.y * 100, 2)
+                    );
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestValue = point.value;
+                    }
+                });
+                
+                // 距离越远，值越小（模拟电阻扩散效应）
+                const value = closestValue + (minDist / 10);
+                data.push({ x, y, value, radius: 20 });
+            }
+            
+            return data;
+        }
+
+        // 初始化热力图
+        function initHeatmap() {
+            const container = document.getElementById('heatmap-container');
+            const heatmap = h337.create({
+                container: container,
+                radius: 30,
+                maxOpacity: 0.6,
+                minOpacity: 0.2,
+                blur: 0.8,
+                gradient: {
+                    '0.2': 'blue',
+                    '0.4': 'cyan',
+                    '0.6': 'lime',
+                    '0.8': 'yellow',
+                    '1.0': 'red'
+                }
+            });
+            
+            const heatmapData = generateHeatmapData();
+            heatmap.setData({
+                max: 50,
+                min: 10,
+                data: heatmapData
+            });
+        }
+
+        // 初始化趋势图
+        function initTrendChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            const resistanceData = generateResistanceData();
+            
+            const datasets = [];
+            const colors = ['#ff5252', '#4fc3f7', '#4caf50', '#ffc107', '#9c27b0'];
+            
+            Object.keys(resistanceData.points).forEach((point, index) => {
+                datasets.push({
+                    label: point,
+                    data: resistanceData.points[point],
+                    borderColor: colors[index],
+                    backgroundColor: colors[index] + '20',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    tension: 0.3,
+                    fill: false
+                });
+            });
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: resistanceData.years.map(year => `第${year}年`),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '电阻值 (mΩ)',
+                                color: '#e0e0e0'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#e0e0e0'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: '检测年份',
+                                color: '#e0e0e0'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#e0e0e0'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e0e0e0'
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw} mΩ`;
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+            
+            // 更新数据面板
+            updateDataPanel(resistanceData);
+        }
+
+        // 更新数据面板
+        function updateDataPanel(resistanceData) {
+            // 获取最新数据（最后一年）
+            const lastYearIndex = resistanceData.years.length - 1;
+            const lastYear = resistanceData.years[lastYearIndex];
+            const pointValues = [];
+            
+            Object.keys(resistanceData.points).forEach(point => {
+                pointValues.push(parseFloat(resistanceData.points[point][lastYearIndex]));
+            });
+            
+            // 计算平均值
+            const avgValue = (pointValues.reduce((a, b) => a + b, 0) / pointValues.length).toFixed(2);
+            
+            // 计算趋势（与上一次检测比较）
+            const prevYearIndex = lastYearIndex - 1;
+            const prevAvgValue = prevYearIndex >= 0 ? 
+                (Object.keys(resistanceData.points).reduce((sum, point) => 
+                    sum + parseFloat(resistanceData.points[point][prevYearIndex]), 0) / 5).toFixed(2) : 0;
+            
+            const trendValue = (avgValue - prevAvgValue).toFixed(2);
+            const trendText = trendValue >= 0 ? `+${trendValue} mΩ` : `${trendValue} mΩ`;
+            
+            // 更新电阻值
+            document.getElementById('resistanceValue').textContent = `${avgValue} mΩ`;
+            
+            // 更新电阻状态
+            const resistanceStatus = document.getElementById('resistanceStatus');
+            let status, statusClass;
+            
+            if (avgValue < 15) {
+                status = "正常范围";
+                statusClass = "status-normal";
+            } else if (avgValue < 30) {
+                status = "需要注意";
+                statusClass = "status-warning";
+            } else {
+                status = "危险状态";
+                statusClass = "status-danger";
+            }
+            
+            resistanceStatus.textContent = status;
+            resistanceStatus.className = 'data-status ' + statusClass;
+            
+            // 更新检测时间（模拟当前日期）
+            const now = new Date();
+            document.getElementById('lastCheckTime').textContent = now.toLocaleDateString('zh-CN') + ' ' + now.toLocaleTimeString('zh-CN');
+            
+            // 更新数据新鲜度状态
+            const dataFreshnessStatus = document.getElementById('dataFreshnessStatus');
+            dataFreshnessStatus.textContent = "数据最新";
+            dataFreshnessStatus.className = 'data-status status-normal';
+            
+            // 更新趋势值
+            document.getElementById('trendValue').textContent = trendText;
+            
+            // 更新趋势状态
+            const trendStatus = document.getElementById('trendStatus');
+            let trendStatusText, trendStatusClass;
+            
+            if (Math.abs(trendValue) < 5) {
+                trendStatusText = "稳定";
+                trendStatusClass = "status-normal";
+            } else if (Math.abs(trendValue) < 20) {
+                trendStatusText = "轻微变化";
+                trendStatusClass = "status-warning";
+            } else {
+                trendStatusText = "显著变化";
+                trendStatusClass = "status-danger";
+            }
+            
+            trendStatus.textContent = trendStatusText;
+            trendStatus.className = 'data-status ' + trendStatusClass;
+        }
 
         // 获取URL参数
         function getQueryParam(name) {
@@ -309,84 +563,12 @@
             const pointNum = pointId ? parseInt(pointId) : 1;
             
             // 更新页面标题
-            document.getElementById('pageTitle').textContent = `接地网${pointNum}#电阻检测`;
+            document.getElementById('pageTitle').textContent = `接地网电阻检测`;
             
-            // 加载对应测点的数据
-            loadPointData(pointNum);
+            // 初始化图表
+            initTrendChart();
+            initHeatmap();
         });
-
-        // 加载测点数据
-        function loadPointData(pointId) {
-            const data = resistanceData[pointId] || resistanceData[1]; // 默认使用测点1的数据
-            
-            // 更新电阻值
-            document.getElementById('resistanceValue').textContent = data.value;
-            
-            // 更新电阻状态
-            const resistanceStatus = document.getElementById('resistanceStatus');
-            resistanceStatus.textContent = getStatusText(data.status);
-            resistanceStatus.className = 'data-status ' + getStatusClass(data.status);
-            
-            // 更新检测时间
-            document.getElementById('lastCheckTime').textContent = data.lastCheck;
-            
-            // 更新数据新鲜度状态
-            const dataFreshnessStatus = document.getElementById('dataFreshnessStatus');
-            dataFreshnessStatus.textContent = getDataStatusText(data.dataStatus);
-            dataFreshnessStatus.className = 'data-status ' + getStatusClass(data.dataStatus);
-            
-            // 更新趋势值
-            document.getElementById('trendValue').textContent = data.trend;
-            
-            // 更新趋势状态
-            const trendStatus = document.getElementById('trendStatus');
-            trendStatus.textContent = getTrendStatusText(data.trendStatus);
-            trendStatus.className = 'data-status ' + getStatusClass(data.trendStatus);
-            
-            // 更新图表标题
-            document.getElementById('trendChart').innerHTML = `测点${pointId}电阻变化趋势图表将在这里显示`;
-            document.getElementById('distributionChart').innerHTML = `测点${pointId}电阻分布热力图将在这里显示`;
-        }
-
-        // 获取状态文本
-        function getStatusText(status) {
-            switch(status) {
-                case 'normal': return '正常范围';
-                case 'warning': return '需要注意';
-                case 'danger': return '危险状态';
-                default: return '未知状态';
-            }
-        }
-
-        // 获取数据状态文本
-        function getDataStatusText(status) {
-            switch(status) {
-                case 'normal': return '数据最新';
-                case 'warning': return '数据稍旧';
-                case 'danger': return '数据过时';
-                default: return '未知状态';
-            }
-        }
-
-        // 获取趋势状态文本
-        function getTrendStatusText(status) {
-            switch(status) {
-                case 'normal': return '稳定';
-                case 'warning': return '轻微变化';
-                case 'danger': return '显著变化';
-                default: return '未知状态';
-            }
-        }
-
-        // 获取状态CSS类
-        function getStatusClass(status) {
-            switch(status) {
-                case 'normal': return 'status-normal';
-                case 'warning': return 'status-warning';
-                case 'danger': return 'status-danger';
-                default: return 'status-normal';
-            }
-        }
 
         function goBack() {
             // 返回主页面
