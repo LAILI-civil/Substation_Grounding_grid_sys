@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>变电站接地网数字孪生大屏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #0a1a2a;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: linear-gradient(to right, #0a2a3a, #0a1a2a);
+            padding: 15px 30px;
+            border-bottom: 1px solid #1e4a6a;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 28px;
+            text-align: center;
+            color: #4fc3f7;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
+            letter-spacing: 2px;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .grid-map {
+            flex: 1;
+            background-color: #102535;
+            border: 1px solid #1e4a6a;
+            border-radius: 8px;
+            margin: 10px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .grid-image {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, #0f2535 25%, #132b3d 25%, #132b3d 50%, #0f2535 50%, #0f2535 75%, #132b3d 75%, #132b3d 100%);
+            background-size: 20px 20px;
+            position: relative;
+        }
+        
+        .node {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 8px currentColor;
+        }
+        
+        .node:hover {
+            width: 26px;
+            height: 26px;
+            box-shadow: 0 0 15px currentColor;
+        }
+        
+        .resistance-node {
+            background-color: #ff5252;
+            color: #ff5252;
+        }
+        
+        .environment-node {
+            background-color: #4caf50;
+            color: #4caf50;
+        }
+        
+        .node-label {
+            position: absolute;
+            font-size: 12px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            transform: translate(-30%, 15px);
+            pointer-events: none;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            padding: 15px;
+            gap: 20px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(to right, #1565c0, #2196f3);
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 14px;
+            color: #5d7c8a;
+            border-top: 1px solid #1e3a4a;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: linear-gradient(to bottom, #1e3a4a, #0f2535);
+            border: 1px solid #2e5a7a;
+            border-radius: 8px;
+            padding: 20px;
+            width: 400px;
+            box-shadow: 0 0 30px rgba(0, 150, 250, 0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2e5a7a;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            color: #4fc3f7;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: #ccc;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>变电站接地网数字孪生大屏</h1>
+        </header>
+        
+        <div class="main-content">
+            <div class="grid-map">
+                <div class="grid-image" id="gridImage">
+                    <!-- 节点将通过JS动态添加 -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" id="analysisBtn">综合分析</button>
+        </div>
+        
+        <div class="footer">
+            © 2023 变电站接地网数字孪生系统 | 版权所有
+        </div>
+    </div>
+    
+    <!-- 模态框用于显示页面跳转选项 -->
+    <div class="modal" id="pageModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">页面导航</h2>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modalMessage">您即将离开当前页面，是否继续？</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="confirmNavigate">确认</button>
+                <button class="btn" style="background: linear-gradient(to right, #c62828, #f44336);" id="cancelNavigate">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const gridImage = document.getElementById('gridImage');
+            const analysisBtn = document.getElementById('analysisBtn');
+            const modal = document.getElementById('pageModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalMessage = document.getElementById('modalMessage');
+            const closeModal = document.getElementById('closeModal');
+            const confirmNavigate = document.getElementById('confirmNavigate');
+            const cancelNavigate = document.getElementById('cancelNavigate');
+            
+            let targetURL = '';
+            
+            // 创建10个节点（5个电阻检测，5个环境监测）
+            const nodePositions = [
+                {x: 20, y: 20, type: 'resistance', id: 1},
+                {x: 80, y: 30, type: 'resistance', id: 2},
+                {x: 40, y: 60, type: 'resistance', id: 3},
+                {x: 70, y: 70, type: 'resistance', id: 4},
+                {x: 30, y: 85, type: 'resistance', id: 5},
+                {x: 60, y: 20, type: 'environment', id: 1},
+                {x: 20, y: 50, type: 'environment', id: 2},
+                {x: 85, y: 50, type: 'environment', id: 3},
+                {x: 50, y: 80, type: 'environment', id: 4},
+                {x: 65, y: 40, type: 'environment', id: 5}
+            ];
+            
+            // 添加节点到网格图
+            nodePositions.forEach(pos => {
+                const node = document.createElement('div');
+                node.className = `node ${pos.type}-node`;
+                node.style.left = `${pos.x}%`;
+                node.style.top = `${pos.y}%`;
+                
+                const label = document.createElement('div');
+                label.className = 'node-label';
+                label.textContent = `${pos.type === 'resistance' ? '电阻' : '环境'}${pos.id}#`;
+                
+                node.appendChild(label);
+                
+                // 添加点击事件
+                node.addEventListener('click', function() {
+                    if (pos.type === 'resistance') {
+                        showModal(
+                            '导航确认',
+                            `您即将进入接地网${pos.id}#电阻检测页面`,
+                            `resistance_detection_${pos.id}.html`
+                        );
+                    } else {
+                        showModal(
+                            '导航确认',
+                            `您即将进入接地网${pos.id}#环境监测页面`,
+                            `environment_monitoring_${pos.id}.html`
+                        );
+                    }
+                });
+                
+                gridImage.appendChild(node);
+            });
+            
+            // 综合分析按钮点击事件
+            analysisBtn.addEventListener('click', function() {
+                showModal(
+                    '导航确认',
+                    '您即将进入接地网整体状态评估页面',
+                    'overall_assessment.html'
+                );
+            });
+            
+            // 显示模态框
+            function showModal(title, message, url) {
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                targetURL = url;
+                modal.style.display = 'flex';
+            }
+            
+            // 关闭模态框
+            closeModal.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            cancelNavigate.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            // 确认导航
+            confirmNavigate.addEventListener('click', function() {
+                modal.style.display = 'none';
+                alert(`在实际应用中，将跳转到: ${targetURL}`);
+                // 实际应用中这里应该是: window.location.href = targetURL;
+            });
+            
+            // 点击模态框外部关闭
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
