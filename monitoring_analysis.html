@@ -55,29 +55,12 @@
             box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
         }
         
-        .back-button {
-            display: inline-block;
-            margin-top: 15px;
-            padding: 10px 20px;
-            background: linear-gradient(to right, #0a2a3a, #0a1a2a);
-            color: #4fc3f7;
-            text-decoration: none;
-            border-radius: 5px;
-            border: 1px solid #2e5a7a;
-            transition: all 0.3s;
-            font-weight: bold;
-        }
-        
-        .back-button:hover {
-            background: linear-gradient(to right, #0a3a4a, #0a2a3a);
-            box-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
-        }
-        
         .controls {
             display: flex;
             justify-content: center;
             margin-bottom: 20px;
             gap: 15px;
+            flex-wrap: wrap;
         }
         
         .control-group {
@@ -96,7 +79,7 @@
             color: #4fc3f7;
         }
         
-        select, button {
+        select, button, .control-button {
             padding: 8px 12px;
             border: 1px solid #2e5a7a;
             border-radius: 4px;
@@ -105,15 +88,18 @@
             font-size: 14px;
         }
         
-        button {
+        button, .control-button {
             background-color: #0a2a3a;
             color: #4fc3f7;
             border: 1px solid #2e5a7a;
             cursor: pointer;
             transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
         }
         
-        button:hover {
+        button:hover, .control-button:hover {
             background-color: #0a3a4a;
             box-shadow: 0 0 10px rgba(79, 195, 247, 0.3);
         }
@@ -191,7 +177,6 @@
     <div class="container">
         <header>
             <h1>环境监测数据分析</h1>
-            <a href="index.html" class="back-button">返回上级</a>
         </header>
         
         <div class="controls">
@@ -204,6 +189,9 @@
             </div>
             <div class="control-group">
                 <button id="updateBtn">更新图表</button>
+            </div>
+            <div class="control-group">
+                <a href="index.html" class="control-button">返回上级</a>
             </div>
         </div>
         
