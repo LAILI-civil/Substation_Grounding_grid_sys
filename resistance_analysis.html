@@ -138,6 +138,11 @@
             color: #e0e0e0;
         }
         
+        .button-group {
+            display: flex;
+            gap: 15px;
+        }
+        
         button {
             background: linear-gradient(to right, #0a6c8f, #0a8fbf);
             color: white;
@@ -154,6 +159,14 @@
         button:hover {
             background: linear-gradient(to right, #0a8fbf, #0a6c8f);
             box-shadow: 0 0 15px rgba(79, 195, 247, 0.5);
+        }
+        
+        #backButton {
+            background: linear-gradient(to right, #6c0a0a, #bf0a0a);
+        }
+        
+        #backButton:hover {
+            background: linear-gradient(to right, #bf0a0a, #8f0a0a);
         }
         
         .chart-container {
@@ -231,6 +244,10 @@
                 flex-direction: column;
                 gap: 10px;
             }
+            
+            .button-group {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -263,7 +280,10 @@
                     </div>
                 </div>
 
-                <button id="calculateBtn">计算预测</button>
+                <div class="button-group">
+                    <button id="calculateBtn">计算预测</button>
+                    <button id="backButton">返回上级</button>
+                </div>
             </div>
 
             <div class="chart-container">
@@ -299,6 +319,7 @@
         const inputContainer = document.getElementById('inputContainer');
         const resultsBody = document.getElementById('resultsBody');
         const calculateBtn = document.getElementById('calculateBtn');
+        const backButton = document.getElementById('backButton');
         const qValueInput = document.getElementById('qValue');
         const rValueInput = document.getElementById('rValue');
         
@@ -559,7 +580,7 @@
                 resistanceChart.ctx.moveTo(currentYearX, yAxis.top);
                 resistanceChart.ctx.lineTo(currentYearX, yAxis.bottom);
                 resistanceChart.ctx.lineWidth = 2;
-                resistanceChart.ctx.strokeStyle = 'rgba(255, 107, 107, 0.7)';
+                resistanceChart.ctx.strokeStyle = 'rgba(255, 107, 107, 0.7);
                 resistanceChart.ctx.setLineDash([5, 5]);
                 resistanceChart.ctx.stroke();
                 resistanceChart.ctx.restore();
@@ -596,6 +617,13 @@
             
             // 绘制图表
             drawChart(inputData, filteredValues, upperBound, lowerBound);
+        });
+        
+        // 返回按钮点击事件
+        backButton.addEventListener('click', function() {
+            // 这里可以根据实际需求修改返回逻辑
+            alert('返回上级功能已触发。在实际应用中，这里会返回到上一级页面或菜单。');
+            // 实际应用中可能是: window.history.back(); 或 window.location.href = '上级页面URL';
         });
         
         // 初始化页面
