@@ -57,14 +57,23 @@
             position: relative;
             overflow: hidden;
             box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .grid-image-container {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
         }
         
         .grid-image {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, #0f2535 25%, #132b3d 25%, #132b3d 50%, #0f2535 50%, #0f2535 75%, #132b3d 75%, #132b3d 100%);
-            background-size: 20px 20px;
-            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+            display: block;
+            border: 1px solid #2e5a7a;
+            box-shadow: 0 0 20px rgba(0, 150, 250, 0.2);
         }
         
         .node {
@@ -76,6 +85,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 0 8px currentColor;
+            z-index: 10;
         }
         
         .node:hover {
@@ -196,6 +206,13 @@
             justify-content: flex-end;
             gap: 10px;
         }
+
+        .loading {
+            color: #4fc3f7;
+            font-size: 18px;
+            text-align: center;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
@@ -206,8 +223,9 @@
         
         <div class="main-content">
             <div class="grid-map">
-                <div class="grid-image" id="gridImage">
-                    <!-- 节点将通过JS动态添加 -->
+                <div class="grid-image-container" id="gridContainer">
+                    <div class="loading">加载接地网图片中...</div>
+                    <!-- 图片将通过JS动态加载 -->
                 </div>
             </div>
         </div>
@@ -240,7 +258,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const gridImage = document.getElementById('gridImage');
+            const gridContainer = document.getElementById('gridContainer');
             const analysisBtn = document.getElementById('analysisBtn');
             const modal = document.getElementById('pageModal');
             const modalTitle = document.getElementById('modalTitle');
@@ -251,52 +269,78 @@
             
             let targetURL = '';
             
-            // 创建10个节点（5个电阻检测，5个环境监测）
-            const nodePositions = [
-                {x: 20, y: 20, type: 'resistance', id: 1},
-                {x: 80, y: 30, type: 'resistance', id: 2},
-                {x: 40, y: 60, type: 'resistance', id: 3},
-                {x: 70, y: 70, type: 'resistance', id: 4},
-                {x: 30, y: 85, type: 'resistance', id: 5},
-                {x: 60, y: 20, type: 'environment', id: 1},
-                {x: 20, y: 50, type: 'environment', id: 2},
-                {x: 85, y: 50, type: 'environment', id: 3},
-                {x: 50, y: 80, type: 'environment', id: 4},
-                {x: 65, y: 40, type: 'environment', id: 5}
-            ];
+            // 创建并加载接地网图片
+            const gridImage = new Image();
+            gridImage.onload = function() {
+                gridContainer.innerHTML = ''; // 清除加载提示
+                const imgElement = document.createElement('img');
+                imgElement.src = 'GroundingGrid.jpg';
+                imgElement.className = 'grid-image';
+                imgElement.alt = '接地网俯视图';
+                gridContainer.appendChild(imgElement);
+                
+                // 图片加载完成后添加节点
+                addNodesToImage(gridContainer);
+            };
             
-            // 添加节点到网格图
-            nodePositions.forEach(pos => {
-                const node = document.createElement('div');
-                node.className = `node ${pos.type}-node`;
-                node.style.left = `${pos.x}%`;
-                node.style.top = `${pos.y}%`;
+            gridImage.onerror = function() {
+                gridContainer.innerHTML = '<div class="loading">图片加载失败，请检查GroundingGrid.jpg是否存在</div>';
+                // 即使图片加载失败，也添加节点到容器
+                addNodesToImage(gridContainer);
+            };
+            
+            // 开始加载图片
+            gridImage.src = 'GroundingGrid.jpg';
+            
+            // 添加节点到图片容器
+            function addNodesToImage(container) {
+                // 定义节点位置（相对于图片容器的百分比）
+                const nodePositions = [
+                    {x: 20, y: 20, type: 'resistance', id: 1},
+                    {x: 80, y: 30, type: 'resistance', id: 2},
+                    {x: 40, y: 60, type: 'resistance', id: 3},
+                    {x: 70, y: 70, type: 'resistance', id: 4},
+                    {x: 30, y: 85, type: 'resistance', id: 5},
+                    {x: 60, y: 20, type: 'environment', id: 1},
+                    {x: 20, y: 50, type: 'environment', id: 2},
+                    {x: 85, y: 50, type: 'environment', id: 3},
+                    {x: 50, y: 80, type: 'environment', id: 4},
+                    {x: 65, y: 40, type: 'environment', id: 5}
+                ];
                 
-                const label = document.createElement('div');
-                label.className = 'node-label';
-                label.textContent = `${pos.type === 'resistance' ? '电阻' : '环境'}${pos.id}#`;
-                
-                node.appendChild(label);
-                
-                // 添加点击事件
-                node.addEventListener('click', function() {
-                    if (pos.type === 'resistance') {
-                        showModal(
-                            '导航确认',
-                            `您即将进入接地网${pos.id}#电阻检测页面`,
-                            `resistance_detection_${pos.id}.html`
-                        );
-                    } else {
-                        showModal(
-                            '导航确认',
-                            `您即将进入接地网${pos.id}#环境监测页面`,
-                            `environment_monitoring_${pos.id}.html`
-                        );
-                    }
+                // 添加节点到网格图
+                nodePositions.forEach(pos => {
+                    const node = document.createElement('div');
+                    node.className = `node ${pos.type}-node`;
+                    node.style.left = `${pos.x}%`;
+                    node.style.top = `${pos.y}%`;
+                    
+                    const label = document.createElement('div');
+                    label.className = 'node-label';
+                    label.textContent = `${pos.type === 'resistance' ? '电阻' : '环境'}${pos.id}#`;
+                    
+                    node.appendChild(label);
+                    
+                    // 添加点击事件
+                    node.addEventListener('click', function() {
+                        if (pos.type === 'resistance') {
+                            showModal(
+                                '导航确认',
+                                `您即将进入接地网${pos.id}#电阻检测页面`,
+                                `resistance_detection_${pos.id}.html`
+                            );
+                        } else {
+                            showModal(
+                                '导航确认',
+                                `您即将进入接地网${pos.id}#环境监测页面`,
+                                `environment_monitoring_${pos.id}.html`
+                            );
+                        }
+                    });
+                    
+                    container.appendChild(node);
                 });
-                
-                gridImage.appendChild(node);
-            });
+            }
             
             // 综合分析按钮点击事件
             analysisBtn.addEventListener('click', function() {
