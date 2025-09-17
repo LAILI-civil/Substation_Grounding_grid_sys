@@ -505,10 +505,10 @@
             const resistanceStatus = document.getElementById('resistanceStatus');
             let status, statusClass;
             
-            if (avgValue < 15) {
+            if (avgValue < 50) {
                 status = "正常范围";
                 statusClass = "status-normal";
-            } else if (avgValue < 30) {
+            } else if (avgValue < 100) {
                 status = "需要注意";
                 statusClass = "status-warning";
             } else {
